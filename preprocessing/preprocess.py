@@ -34,12 +34,16 @@ def preprocess_rap1(args):
     train_img_file.append([img_file[i] for i in train])
     test_img_file.append([img_file[i] for i in test])
 
+    train_label = label[train, :]
+    test_label = label[test, :]
+
     proc_dict = {
         'img_root': img_root,
         'label_str': attr_name,
         'train_img_file': train_img_file,
         'test_img_file': test_img_file,
-        'label': label,
+        'train_label': train_label,
+        'test_label': test_label
     }
 
     with open(os.path.join(save_root, 'RAPv1.pkl'), 'wb') as f:
