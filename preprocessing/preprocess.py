@@ -20,7 +20,7 @@ def preprocess_rap1(args):
 
     raw_attr_name = [data[0][0][3][i][0][0] for i in range(92)]
     raw_label = data[0][0][1]
-    selected_attr_idx = np.array(range(51))
+    selected_attr_idx = np.array(range(51))[1:]
 
     label = raw_label[:, selected_attr_idx].astype(np.float16)
     attr_name = [raw_attr_name[i] for i in selected_attr_idx] 
@@ -66,6 +66,9 @@ def argparser():
     
     args = parser.parse_args()
     return args
+
+# Testing todo
+# is labels in ours range -1 0 1?
 
 
 if __name__ == "__main__":

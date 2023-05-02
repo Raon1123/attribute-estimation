@@ -1,3 +1,6 @@
+import os
+import pickle
+
 import torch
 from torch.utils.tensorboard import SummaryWriter
 try:
@@ -18,6 +21,8 @@ def load_model(model, config):
 
 def logger_init(config):
   logging_config = config['LOGGING']
+  log_str = [logging_config['project'], logging_config['postfix']]
+  log_str = '_'.join(log_str)
 
   if wandb is not None and logging_config['logger'] == 'wandb':
     wandb.init(
@@ -28,9 +33,16 @@ def logger_init(config):
     wandb.watch_called = False
     writer = 'wandb'
   elif logging_config['logger'] == 'tensorboard':
-    writer = SummaryWriter(logging_config['log_dir'])
+    log_path = os.path.join(logging_config['log_dir'], log_str)
+    writer = SummaryWriter(log_path)
   else:
     raise NotImplementedError
+  
+  # config pickling
+  pkl_file = f'{log_str}_config.pkl'
+  pkl_path = os.path.join(logging_config['log_dir'], pkl_file)
+  with open(pkl_path, 'wb') as f:
+    pickle.dump(config, f)
   
   return writer
 
@@ -38,7 +50,25 @@ def logger_init(config):
 def log(writer, loss, epoch, mode, config=None):
   if writer == 'wandb':
     wandb.log({f'{mode}_loss': loss, 'epoch': epoch})
-  elif writer == 'tensorboard':
-    writer.add_scalar(f'{mode}_loss', loss, epoch)
   else:
-    raise NotImplementedError
+    try:
+      writer.add_scalar(f'{mode}_loss', loss, epoch)
+    except:
+      raise NotImplementedError
+  
+
+def log_metrics(writer, metrics, epoch, config=None):
+  # metrics value mean
+  for k, v in metrics.items():
+    metrics[k] = v.mean()
+
+  print(metrics)
+
+  if writer == 'wandb':
+    wandb.log(metrics, step=epoch)
+  else:
+    try:
+      for k, v in metrics.items():
+        writer.add_scalar(k, v, epoch)
+    except:
+      raise NotImplementedError

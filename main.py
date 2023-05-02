@@ -11,6 +11,7 @@ from models.modelutils import get_model
 import utils.epochs as epochs
 import utils.logging as logging
 
+
 def load_config(args):
     with open(args.config, 'r') as f:
         config = yaml.load(f, Loader=yaml.FullLoader)
@@ -18,32 +19,46 @@ def load_config(args):
 
 
 def main(config):
-  # define device
-  device = config['device']
+    # define device
+    device = config['device']
 
-  train_dataloader, test_dataloader, num_classes = get_dataloader(config)
-  model = get_model(config, num_classes).to(device)
-  writer = logging.logger_init(config)
+    train_dataloader, test_dataloader, num_classes = get_dataloader(config)
+    model = get_model(config, num_classes).to(device)
+    writer = logging.logger_init(config)
 
-  # define optimizer
-  optimizer_config = config['OPTIMIZER']
-  optimizer = torch.optim.Adam(
-      model.parameters(),
-      lr=optimizer_config['lr'],
-      weight_decay=optimizer_config['weight_decay']
-  )
+    # define optimizer
+    optimizer_config = config['OPTIMIZER']
+    optimizer = torch.optim.Adam(
+        model.parameters(),
+        lr=optimizer_config['lr'],
+        weight_decay=optimizer_config['weight_decay']
+    )
 
-  pbar = tqdm.tqdm(range(optimizer_config['epochs']))
-  for epoch in pbar:
-    train_loss = epochs.train_epoch(model, train_dataloader, optimizer, config, device)
-    test_loss = epochs.test_epoch(model, test_dataloader, config, device)
-    epochs.update_epoch(model, config)
-      
-    pbar.set_description(f"Epoch {epoch+1} | Train Loss: {train_loss:.5f} | Test Loss: {test_loss:.5f}")
-    logging.log(writer, train_loss, epoch, 'train', config)
-    logging.log(writer, test_loss, epoch, 'test', config)
+    pbar = tqdm.tqdm(range(optimizer_config['epochs']))
+    for epoch in pbar:
+        train_loss = epochs.train_epoch(
+            model, train_dataloader, optimizer, config, device)
+        test_loss = epochs.test_epoch(model, test_dataloader, config, device)
+        epochs.update_epoch(model, config)
 
-  logging.save_model(model, config)
+        pbar.set_description(
+            f"Epoch {epoch+1} | Train Loss: {train_loss:.5f} | Test Loss: {test_loss:.5f}")
+        logging.log(writer, train_loss, epoch, 'train', config)
+        logging.log(writer, test_loss, epoch, 'test', config)
+
+        metrics = epochs.evaluate_result(
+            model, test_dataloader, epoch, config, writer, device)
+        logging.log_metrics(writer, metrics, epoch, config)
+        print(epoch, metrics)
+
+    logging.save_model(model, config)
+    metrics = epochs.evaluate_result(
+        model, test_dataloader, epoch, config, writer, device)
+
+    print(metrics)
+    # write to text
+    with open('result.txt', 'w') as f:
+        f.write(str(metrics))
 
 
 def argparser():

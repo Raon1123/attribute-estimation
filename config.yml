@@ -25,6 +25,8 @@ DATASET:
 
 LOGGING:
   logger: 'tensorboard'
+  log_dir: './logs'
   model_path: './save'
   load_model: False
+  project: 'LargeLossMatters'
   postfix: 'test'

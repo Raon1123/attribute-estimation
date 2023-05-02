@@ -41,6 +41,12 @@ class AttributeDataset(Dataset):
         """
         return self.label_str
     
+    def get_num_classes(self):
+        """
+        Return the number of classes.
+        """
+        return len(self.label_str)
+    
 
 def get_dataset(pkl_path):
     with open(pkl_path, 'rb') as f:

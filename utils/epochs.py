@@ -1,4 +1,8 @@
+import numpy as np
 import torch
+import pickle
+
+import utils.criteria as criteria
 
 def train_epoch(model, train_dataloader, optimizer, config, device='cpu'):
     """
@@ -43,7 +47,7 @@ def test_epoch(model, test_dataloader, config, device='cpu'):
         device (str): Device to be used for testing.
 
     Returns:
-        float: Average loss of the epoch.
+        loss: Average loss of the epoch.
     """
     model.eval()
     test_loss = 0.0
@@ -70,3 +74,42 @@ def update_epoch(model, config):
 
     if model_config['name'] == 'LargeLossMatters':
         model.decrease_clean_rate()
+
+
+def evaluate_result(model, test_dataloader, epoch, config, writer, device='cpu'):
+    """
+    Evaluate result of model (mAP, AP etc.)
+    """
+    model.eval()
+
+    data_size = len(test_dataloader.dataset)
+    num_classes = test_dataloader.dataset.get_num_classes()
+
+    pred, gt = np.zeros((data_size, num_classes)), np.zeros((data_size, num_classes))
+    start_idx = 0
+    for (data, target) in test_dataloader:
+        data = data.to(device).float()
+
+        with torch.no_grad():
+            logits = model.forward(data)
+            if config['METHOD']['name'] == 'LargeLossMatters':
+                if logits.dim() == 1:
+                    logits = logits.unsqueeze(0)
+                preds = torch.sigmoid(logits)
+
+            batch_sz = logits.size(0)
+            pred[start_idx:start_idx+batch_sz] = preds.cpu().numpy()
+            gt[start_idx:start_idx+batch_sz] = target.numpy()
+
+            start_idx += batch_sz
+    
+    pickle_path = config['LOGGING']['log_dir'] + 'smaple.pkl'
+    with open(pickle_path, 'wb') as f:
+        pickle.dump({'pred': pred, 'gt': gt}, f)
+
+    mA = criteria.mean_accuracy(pred, gt)
+    acc, prec, recall, f1 = criteria.example_based(pred, gt)
+
+    metrics = {'mA': mA, 'acc': acc, 'prec': prec, 'recall': recall, 'f1': f1}
+
+    return metrics
