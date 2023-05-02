@@ -23,7 +23,7 @@ def preprocess_rap1(args):
     selected_attr_idx = np.array(range(51))
 
     label = raw_label[:, selected_attr_idx].astype(np.float16)
-    attr_name = [raw_attr_name[i] for i in selected_attr_idx]
+    attr_name = [raw_attr_name[i] for i in selected_attr_idx] 
 
     train_img_file = []
     test_img_file = []
@@ -31,8 +31,8 @@ def preprocess_rap1(args):
     train = data[0][0][0][idx][0][0][0][0][0, :] - 1
     test = data[0][0][0][idx][0][0][0][1][0, :] - 1
 
-    train_img_file.append([img_file[i] for i in train])
-    test_img_file.append([img_file[i] for i in test])
+    train_img_file.extend([img_file[i] for i in train])
+    test_img_file.extend([img_file[i] for i in test])
 
     train_label = label[train, :]
     test_label = label[test, :]
@@ -66,6 +66,7 @@ def argparser():
     
     args = parser.parse_args()
     return args
+
 
 if __name__ == "__main__":
     # root_dir ~/dataset/RAP1

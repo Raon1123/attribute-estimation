@@ -16,7 +16,7 @@ metadata
 each data
 - `train_img_file`: filename for train image
 - `val_img_file`: filename for validation image
-- `label`: label for multi-label classification, each image has (1,L) shape. If value is 1, this image has positive label, 0 negative label, and -1 unknown label. 
+- `label`: label for multi-label classification, each image has (1,L) shape. If value is 1, this image has positive label, 0 unknown label, and -1 negative label. 
 
 ## Example
 
