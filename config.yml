@@ -22,3 +22,9 @@ OPTIMIZER:
 DATASET:
   name: 'RAP'
   pkl_path: '/home/ayp/dataset/attribute/RAPv1.pkl'
+
+LOGGING:
+  logger: 'tensorboard'
+  model_path: './save'
+  load_model: False
+  postfix: 'test'
