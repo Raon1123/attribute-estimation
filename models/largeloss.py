@@ -22,7 +22,7 @@ class LargeLossMatters(nn.Module):
 
       self.num_classes = num_classes
       self.mod_schemes = mod_schemes
-      self.delta_rel = delta_rel
+      self.delta_rel = delta_rel / 100
       self.clean_rate = 1.0
 
       if backbone == 'resnet50':
@@ -58,7 +58,7 @@ class LargeLossMatters(nn.Module):
       preds = self.forward(x)
 
       batch_size = int(x.shape[0])
-      num_classes = int(self.num_classes)
+      num_classes = int(x.shape[1])
 
       loss_fn = nn.BCEWithLogitsLoss(reduction='none')
       loss_matrix = loss_fn(preds, labels) # (N, num_classes)
