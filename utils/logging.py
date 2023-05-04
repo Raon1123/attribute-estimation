@@ -75,9 +75,10 @@ def log_metrics(writer, metrics, epoch, config=None):
   # metrics value mean
   for k, v in metrics.items():
     metrics[k] = v.mean()
+  metrics['epoch'] = epoch
 
   if writer == 'wandb':
-    wandb.log(metrics, step=epoch)
+    wandb.log(metrics)
   else:
     try:
       for k, v in metrics.items():

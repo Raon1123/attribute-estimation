@@ -2,7 +2,10 @@ logs/*
 save/*
 *.pkl
 *.txt
+*.err
+*.out
 config.yml
+wandb/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
