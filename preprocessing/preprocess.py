@@ -6,7 +6,7 @@ import json
 import numpy as np
 from scipy.io import loadmat
 
-DATASETS = ['rap1', 'pascal']
+DATASETS = ['rap1', 'pascal', 'coco']
 
 def preprocess_rap1(args):
     data_len = 41585
@@ -51,6 +51,8 @@ def preprocess_rap1(args):
 
     with open(os.path.join(save_root, 'RAPv1.pkl'), 'wb') as f:
         pickle.dump(proc_dict, f)
+
+    return proc_dict
 
 
 def preprocess_pascal(args):
@@ -119,6 +121,8 @@ def preprocess_pascal(args):
 
     with open(os.path.join(save_root, 'PASCAL.pkl'), 'wb') as f:
         pickle.dump(proc_dict, f)
+
+    return proc_dict
 
 
 def preprocess_coco(args):
@@ -203,6 +207,8 @@ def preprocess_coco(args):
     with open(os.path.join(save_root, 'COCO.pkl'), 'wb') as f:
         pickle.dump(proc_dict, f)
 
+    return proc_dict
+
 
 
 def argparser():
@@ -226,13 +232,20 @@ def argparser():
 # is labels in ours range -1 0 1?
 
 if __name__ == "__main__":
-    # root_dir ~/dataset/RAP1
     args = argparser()
+
     if args.dataset == 'rap1':
-        preprocess_rap1(args)
+        proc_dict = preprocess_rap1(args)
     elif args.dataset == 'pascal':
-        preprocess_pascal(args)
+        proc_dict = preprocess_pascal(args)
     elif args.dataset == 'coco':
-        preprocess_coco(args)
+        proc_dict = preprocess_coco(args)
     else:
         raise NotImplementedError
+    
+    print('Preprocessing done!')
+    print('Saved at {}'.format(args.save_dir))
+    print('Dataset: {}'.format(args.dataset))
+    print('Number of train images: {}'.format(len(proc_dict['train_img_file'])))
+    print('Number of test images: {}'.format(len(proc_dict['test_img_file'])))
+    print('Number of attributes: {}'.format(len(proc_dict['label_str'])))
