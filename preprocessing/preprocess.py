@@ -1,11 +1,12 @@
 import argparse
 import pickle
 import os
+import json
 
 import numpy as np
 from scipy.io import loadmat
 
-DATASETS = ['rap1', 'pascal']
+DATASETS = ['rap1', 'pascal', 'coco']
 
 def preprocess_rap1(args):
     data_len = 41585
@@ -50,6 +51,8 @@ def preprocess_rap1(args):
 
     with open(os.path.join(save_root, 'RAPv1.pkl'), 'wb') as f:
         pickle.dump(proc_dict, f)
+
+    return proc_dict
 
 
 def preprocess_pascal(args):
@@ -118,7 +121,95 @@ def preprocess_pascal(args):
 
     with open(os.path.join(save_root, 'PASCAL.pkl'), 'wb') as f:
         pickle.dump(proc_dict, f)
-                    
+
+    return proc_dict
+
+
+def preprocess_coco(args):
+    data_root = args.data_dir
+    save_root = args.save_dir
+
+    json_train_path = os.path.join(data_root, 'annotations', 'instances_train2014.json')
+    json_test_path = os.path.join(data_root, 'annotations', 'instances_val2014.json')
+
+    with open(json_train_path, 'r') as f:
+        json_train = json.load(f)
+    with open(json_test_path, 'r') as f:
+        json_test = json.load(f)
+
+    # category
+    category_list = []
+    id_to_idx = {}
+    category = json_train['categories']
+
+    for i in range(len(category)):
+        category_list.append(category[i]['name'])
+        id_to_idx[category[i]['id']] = i
+    
+    # image id list
+    train_img_id_list = []
+    test_img_id_list = []
+
+    train_img_id_list = sorted(np.unique([str(json_train['annotations'][i]['image_id']) for i in range(len(json_train['annotations']))]))
+    test_img_id_list = sorted(np.unique([str(json_test['annotations'][i]['image_id']) for i in range(len(json_test['annotations']))]))
+
+    train_img_id_list = np.array(train_img_id_list, dtype=np.int32)
+    test_img_id_list = np.array(test_img_id_list, dtype=np.int32)
+
+    train_image_id_to_index = {train_img_id_list[i]: i for i in range(len(train_img_id_list))}
+    test_image_id_to_index = {test_img_id_list[i]: i for i in range(len(test_img_id_list))}
+
+    num_categories = len(category_list)
+    num_train_images = len(train_img_id_list)
+    num_test_images = len(test_img_id_list)
+
+    # label matrix
+    train_label_matrix = np.zeros((num_train_images, num_categories))
+    test_label_matrix = np.zeros((num_test_images, num_categories))
+
+    train_image_ids = np.zeros(num_train_images)
+    test_image_ids = np.zeros(num_test_images)
+
+    for i in range(len(json_train['annotations'])):
+        image_id = int(json_train['annotations'][i]['image_id'])
+        row_index = train_image_id_to_index[image_id]
+
+        category_id = int(json_train['annotations'][i]['category_id'])
+        category_index = int(id_to_idx[category_id])
+
+        train_label_matrix[row_index, category_index] = 1.0
+        train_image_ids[row_index] = int(image_id)
+
+    for i in range(len(json_test['annotations'])):
+        image_id = int(json_test['annotations'][i]['image_id'])
+        row_index = test_image_id_to_index[image_id]
+
+        category_id = int(json_test['annotations'][i]['category_id'])
+        category_index = int(id_to_idx[category_id])
+
+        test_label_matrix[row_index, category_index] = 1.0
+        test_image_ids[row_index] = int(image_id)
+
+    # image file name
+    train_image = ['train2014/COCO_train2014_{:012d}.jpg'.format(int(train_image_ids[i])) for i in range(num_train_images)]
+    test_image = ['val2014/COCO_val2014_{:012d}.jpg'.format(int(test_image_ids[i])) for i in range(num_test_images)]
+
+    # save
+    proc_dict = {
+        'img_root': data_root,
+        'label_str': category_list,
+        'train_img_file': train_image,
+        'test_img_file': test_image,
+        'train_label': train_label_matrix.astype(np.float16),
+        'test_label': test_label_matrix.astype(np.float16)
+    }
+
+    with open(os.path.join(save_root, 'COCO.pkl'), 'wb') as f:
+        pickle.dump(proc_dict, f)
+
+    return proc_dict
+
+
 
 def argparser():
     parser = argparse.ArgumentParser(
@@ -140,13 +231,21 @@ def argparser():
 # Testing todo
 # is labels in ours range -1 0 1?
 
-
 if __name__ == "__main__":
-    # root_dir ~/dataset/RAP1
     args = argparser()
+
     if args.dataset == 'rap1':
-        preprocess_rap1(args)
+        proc_dict = preprocess_rap1(args)
     elif args.dataset == 'pascal':
-        preprocess_pascal(args)
+        proc_dict = preprocess_pascal(args)
+    elif args.dataset == 'coco':
+        proc_dict = preprocess_coco(args)
     else:
         raise NotImplementedError
+    
+    print('Preprocessing done!')
+    print('Saved at {}'.format(args.save_dir))
+    print('Dataset: {}'.format(args.dataset))
+    print('Number of train images: {}'.format(len(proc_dict['train_img_file'])))
+    print('Number of test images: {}'.format(len(proc_dict['test_img_file'])))
+    print('Number of attributes: {}'.format(len(proc_dict['label_str'])))

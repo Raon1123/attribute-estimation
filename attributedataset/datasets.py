@@ -4,7 +4,8 @@ import pickle
 import torch
 from torch.utils.data import Dataset
 from torchvision import transforms
-from torchvision.io import read_image
+
+from PIL import Image
 
 
 class AttributeDataset(Dataset):
@@ -27,7 +28,7 @@ class AttributeDataset(Dataset):
     
     def __getitem__(self, idx: int):
         img_path = os.path.join(self.img_root, self.img_file[idx]) 
-        image = read_image(img_path).float() # (C, H, W)
+        image = Image.open(img_path).convert('RGB') # (H, W, C)
         label = self.label[idx]
 
         if self.transform:
@@ -56,26 +57,28 @@ def get_transforms(config):
 
     if dataset_name == 'rap1':
         train_transform = transforms.Compose([
-            transforms.Resize((256, 128), antialias=None),
+            transforms.Resize((448, 224), antialias=None),
             transforms.RandomHorizontalFlip(0.5),
+            transforms.ToTensor(),
             transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
         ])
         test_transform = transforms.Compose([
-            transforms.Resize((256, 128), antialias=None),
-            transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
-        ])
-    elif dataset_name == 'pascal':
-        train_transform = transforms.Compose([
-            transforms.Resize((448,448), antialias=None),
-            transforms.RandomHorizontalFlip(0.5),
-            transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
-        ])
-        test_transform = transforms.Compose([
-            transforms.Resize((448,448), antialias=None),
+            transforms.Resize((448, 224), antialias=None),
+            transforms.ToTensor(),
             transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
         ])
     else:
-        raise NotImplementedError
+        train_transform = transforms.Compose([
+            transforms.Resize((448,448), antialias=None),
+            transforms.RandomHorizontalFlip(0.5),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
+        ])
+        test_transform = transforms.Compose([
+            transforms.Resize((448,448), antialias=None),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
+        ])
     
     return train_transform, test_transform
 
