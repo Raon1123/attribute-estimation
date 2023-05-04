@@ -1,7 +1,7 @@
 device: cuda:0
 
 loader:
-  batch_size: 128
+  batch_size: 16
   num_workers: 4
   pin_memory: True
 
@@ -16,11 +16,11 @@ OPTIMIZER:
   name: 'Adam'
   lr: 0.00001
   weight_decay: 0.0005
-  epochs: 20
+  epochs: 100
 
 DATASET:
-  name: 'pascal'
-  pkl_path: '/home/ayp/dataset/attribute/PASCAL.pkl'
+  name: 'rap1'
+  pkl_path: '/home/ayp/dataset/attribute/RAPv1.pkl'
 
 LOGGING:
   logger: 'tensorboard'
