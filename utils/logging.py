@@ -62,8 +62,6 @@ def log_metrics(writer, metrics, epoch, config=None):
   for k, v in metrics.items():
     metrics[k] = v.mean()
 
-  print(metrics)
-
   if writer == 'wandb':
     wandb.log(metrics, step=epoch)
   else:

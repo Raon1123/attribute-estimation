@@ -49,13 +49,10 @@ def main(config):
         metrics = epochs.evaluate_result(
             model, test_dataloader, epoch, config, writer, device)
         logging.log_metrics(writer, metrics, epoch, config)
-        print(epoch, metrics)
 
     logging.save_model(model, config)
     metrics = epochs.evaluate_result(
         model, test_dataloader, epoch, config, writer, device)
-
-    print(metrics)
     # write to text
     with open('result.txt', 'w') as f:
         f.write(str(metrics))
