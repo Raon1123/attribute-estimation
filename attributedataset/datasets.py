@@ -56,12 +56,12 @@ def get_transforms(config):
 
     if dataset_name == 'rap1':
         train_transform = transforms.Compose([
-            transforms.Resize((256, 128), antialias=None),
+            transforms.Resize((448, 224), antialias=None),
             transforms.RandomHorizontalFlip(0.5),
             transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
         ])
         test_transform = transforms.Compose([
-            transforms.Resize((256, 128), antialias=None),
+            transforms.Resize((448, 224), antialias=None),
             transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
         ])
     elif dataset_name == 'pascal':
