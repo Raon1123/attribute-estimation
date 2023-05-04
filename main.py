@@ -3,11 +3,10 @@ import tqdm
 import argparse
 
 import torch
-from torch.utils.data import DataLoader
 
 from attributedataset.datasets import get_dataloader
-from models.modelutils import get_model
 
+import models.modelutils as modelutils
 import utils.epochs as epochs
 import utils.logging as logging
 
@@ -23,22 +22,24 @@ def main(config):
     device = config['device']
 
     train_dataloader, test_dataloader, num_classes = get_dataloader(config)
-    model = get_model(config, num_classes).to(device)
+    model = modelutils.get_model(config, num_classes).to(device)
     writer = logging.logger_init(config)
 
     # define optimizer
     optimizer_config = config['OPTIMIZER']
-    optimizer = torch.optim.Adam(
-        model.parameters(),
-        lr=optimizer_config['lr'],
-        weight_decay=optimizer_config['weight_decay']
-    )
+    optimizer = modelutils.get_optimizer(model, config)
+    scheduler = modelutils.get_scheduler(optimizer, config)
 
     pbar = tqdm.tqdm(range(optimizer_config['epochs']))
     for epoch in pbar:
         train_loss = epochs.train_epoch(
-            model, train_dataloader, optimizer, config, device)
+            model, train_dataloader, optimizer, config, device
+        )
         test_loss = epochs.test_epoch(model, test_dataloader, config, device)
+
+        if scheduler is not None:
+            scheduler.step()
+
         epochs.update_epoch(model, config)
 
         pbar.set_description(
@@ -53,6 +54,7 @@ def main(config):
     logging.save_model(model, config)
     metrics = epochs.evaluate_result(
         model, test_dataloader, epoch, config, writer, device)
+    
     # write to text
     with open('result.txt', 'w') as f:
         f.write(str(metrics))
