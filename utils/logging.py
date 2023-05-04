@@ -63,7 +63,7 @@ def logger_init(config):
 
 def log(writer, loss, epoch, mode, config=None):
   if writer == 'wandb':
-    wandb.log({f'{mode}_loss': loss, 'epoch': epoch})
+    wandb.log({f'{mode}_loss': loss}, step=epoch)
   else:
     try:
       writer.add_scalar(f'{mode}_loss', loss, epoch)
@@ -75,10 +75,9 @@ def log_metrics(writer, metrics, epoch, config=None):
   # metrics value mean
   for k, v in metrics.items():
     metrics[k] = v.mean()
-  metrics['epoch'] = epoch
 
   if writer == 'wandb':
-    wandb.log(metrics)
+    wandb.log(metrics, step=epoch)
   else:
     try:
       for k, v in metrics.items():
