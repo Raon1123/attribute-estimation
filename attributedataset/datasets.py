@@ -48,7 +48,41 @@ class AttributeDataset(Dataset):
         return len(self.label_str)
     
 
-def get_dataset(pkl_path):
+def get_transforms(config):
+    imagenet_mean = [0.485, 0.456, 0.406]
+    imagenet_std = [0.229, 0.224, 0.225]
+
+    dataset_name = config['DATASET']['name']
+
+    if dataset_name == 'rap1':
+        train_transform = transforms.Compose([
+            transforms.Resize((256, 128), antialias=None),
+            transforms.RandomHorizontalFlip(0.5),
+            transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
+        ])
+        test_transform = transforms.Compose([
+            transforms.Resize((256, 128), antialias=None),
+            transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
+        ])
+    elif dataset_name == 'pascal':
+        train_transform = transforms.Compose([
+            transforms.Resize((448,448), antialias=None),
+            transforms.RandomHorizontalFlip(0.5),
+            transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
+        ])
+        test_transform = transforms.Compose([
+            transforms.Resize((448,448), antialias=None),
+            transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
+        ])
+    else:
+        raise NotImplementedError
+    
+    return train_transform, test_transform
+
+
+def get_dataset(config):
+    pkl_path = config['DATASET']['pkl_path']
+
     with open(pkl_path, 'rb') as f:
         proc_dict = pickle.load(f)
     
@@ -61,27 +95,24 @@ def get_dataset(pkl_path):
 
     num_classes = len(label_str)
 
-    transform = transforms.Compose([
-        transforms.Resize((256, 128), antialias=True),
-        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    ])
+    train_transform, test_transform = get_transforms(config)
 
     train_dataset = AttributeDataset(img_root, 
                                      label_str, 
                                      train_img_file, 
                                      train_label,
-                                     transform=transform)
+                                     transform=train_transform)
     test_dataset = AttributeDataset(img_root, 
                                     label_str, 
                                     test_img_file,
                                     test_label,
-                                    transform=transform)
+                                    transform=test_transform)
 
     return train_dataset, test_dataset, num_classes
 
 
 def get_dataloader(config):
-    train_dataset, test_dataset, num_classes = get_dataset(config['DATASET']['pkl_path'])
+    train_dataset, test_dataset, num_classes = get_dataset(config)
 
     loader_config = config['loader']
 

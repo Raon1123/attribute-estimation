@@ -14,13 +14,13 @@ METHOD:
 
 OPTIMIZER:
   name: 'Adam'
-  lr: 0.0001
+  lr: 0.00001
   weight_decay: 0.0005
   epochs: 20
 
 DATASET:
-  name: 'RAP1'
-  pkl_path: '/home/ayp/dataset/attribute/RAPv1.pkl'
+  name: 'pascal'
+  pkl_path: '/home/ayp/dataset/attribute/PASCAL.pkl'
 
 LOGGING:
   logger: 'tensorboard'

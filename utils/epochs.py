@@ -102,10 +102,6 @@ def evaluate_result(model, test_dataloader, epoch, config, writer, device='cpu')
             gt[start_idx:start_idx+batch_sz] = target.numpy()
 
             start_idx += batch_sz
-    
-    pickle_path = config['LOGGING']['log_dir'] + 'smaple.pkl'
-    with open(pickle_path, 'wb') as f:
-        pickle.dump({'pred': pred, 'gt': gt}, f)
 
     mA = criteria.mean_accuracy(pred, gt)
     acc, prec, recall, f1 = criteria.example_based(pred, gt)

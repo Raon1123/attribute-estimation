@@ -8,21 +8,35 @@ try:
 except ImportError:
   wandb = None
 
+def exp_str(config):
+  logging_config = config['LOGGING']
+  log_str = [logging_config['project'], logging_config['postfix']]
+  log_str = '_'.join(log_str)
+  
+  return log_str
+
+
 def save_model(model, config):
   logging_config = config['LOGGING']
-  torch.save(model.state_dict(), logging_config['model_path'])
+  log_str = exp_str(config)
+  model_path = os.path.join(logging_config['model_path'], log_str)
+
+  torch.save(model.state_dict(), model_path)
 
 
 def load_model(model, config):
   logging_config = config['LOGGING']
-  model.load_state_dict(torch.load(logging_config['model_path']))
+  log_str = exp_str(config)
+  model_path = os.path.join(logging_config['model_path'], log_str)
+
+  model.load_state_dict(torch.load(model_path))
+
   return model
 
 
 def logger_init(config):
   logging_config = config['LOGGING']
-  log_str = [logging_config['project'], logging_config['postfix']]
-  log_str = '_'.join(log_str)
+  log_str = exp_str(config)
 
   if wandb is not None and logging_config['logger'] == 'wandb':
     wandb.init(

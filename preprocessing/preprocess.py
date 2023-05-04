@@ -80,8 +80,6 @@ def preprocess_pascal(args):
         'tvmonitor': 19
     }
 
-    catID_to_catName = {catName_to_catID[k]: k for k in catName_to_catID}
-
     ann_dict = {}
     image_list = {'train': [], 'val': []}
     label_matrix = {}
