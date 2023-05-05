@@ -31,7 +31,7 @@ class LargeLossMatters(nn.Module):
         self.backbone = None
       elif backbone == 'resnet50':
         self.backbone = torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.DEFAULT)
-        self.backbone = nn.Sequential(*list(self.backbone.children())[:-2]) # (N, 2048, 7, 7)
+        self.backbone = nn.Sequential(*list(self.backbone.children())[:-2]) # (N, 2048, 14, 14)
       else:
         raise NotImplementedError
       
@@ -47,7 +47,7 @@ class LargeLossMatters(nn.Module):
     
     def forward(self, x):
       if self.backbone is not None:
-        features = self.backbone(x) # (N, 2048, 7, 7)
+        features = self.backbone(x) # (N, 2048, 14, 14)
       else:
         features = x
 
