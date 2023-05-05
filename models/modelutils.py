@@ -16,10 +16,15 @@ def get_model(config, num_classes):
 
     if model_config['name'] == 'LargeLossMatters':
         try:
+            use_feature = config['DATASET']['use_feature']
+        except:
+            use_feature = False
+        try:
             model = LargeLossMatters(
                 num_classes=num_classes,
                 backbone=model_config['backbone'],
                 freeze_backbone=model_config['freeze_backbone'],
+                use_feature=use_feature,
                 mod_schemes=model_config['mod_scheme'],
                 delta_rel = model_config['delta_rel'],
             )

@@ -1,7 +1,5 @@
 import os
-import pickle
 
-import torch
 from torch.utils.data import Dataset
 
 from PIL import Image
@@ -50,26 +48,35 @@ class AttributeDataset(Dataset):
 
 class FeatureDataset(Dataset):
     def __init__(self,
-                 feature_root,
-                 img_file,
+                 label_str,
+                 feature,
                  label,
-                 transform=None) -> None:
+                 ) -> None:
         super().__init__()
 
-        self.feature_root = feature_root
-        self.img_file = img_file
+        self.label_str = label_str
+        self.feature = feature
         self.label = label
-        self.transform = transform
 
     def __len__(self) -> int:
-        return len(self.img_file)
+        return len(self.feature)
     
     def __getitem__(self, idx: int):
-        feature_path = os.path.join(self.feature_root, self.img_file[idx]) 
-        feature = torch.load(feature_path) # (H, W, C)
+        feature = self.feature[idx]
         label = self.label[idx]
 
-        if self.transform:
-            feature = self.transform(feature)
-
         return feature, label
+    
+    def get_label_str(self):
+        """
+        Return the list of attribute names.
+        """
+        return self.label_str
+    
+    def get_num_classes(self):
+        """
+        Return the number of classes.
+        """
+        return len(self.label_str)
+    
+    

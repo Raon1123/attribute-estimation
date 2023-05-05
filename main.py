@@ -70,13 +70,14 @@ def argparser():
 if __name__ == "__main__":
     # Config load
     args = argparser()
-    
-    if args.feature:
-        from attributedataset.datasetutils import generate_feature
-        generate_feature(args.config)
-        exit(0)
-    
     config = load_config(args)
     print(config)
 
+    if args.feature:
+        from attributedataset.datasetutils import generate_feature
+        generate_feature(config)
+        exit(0)
+    
     main(config)
+
+    exit(0)
