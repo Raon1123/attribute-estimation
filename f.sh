@@ -1,2 +1,0 @@
-nohup python main.py --config configs/pascal_config.yml 1> outs/log_pascal.out 2> outs/log_pascal.err &
-nohup python main.py --config configs/pascal_feature.yml 1> outs/log_pascalf.out 2> outs/log_pascalf.err &
