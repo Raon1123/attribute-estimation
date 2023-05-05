@@ -4,7 +4,9 @@ save/*
 *.txt
 *.err
 *.out
+run.sh
 config.yml
+configs/*
 wandb/*
 
 # Byte-compiled / optimized / DLL files
