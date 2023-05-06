@@ -36,6 +36,7 @@ def load_model(model, config):
 
 def logger_init(config):
   logging_config = config['LOGGING']
+  log_str = exp_str(config)
 
   if wandb is not None and logging_config['logger'] == 'wandb':
     project = logging_config['project'] + '_' + config['DATASET']['name']
@@ -47,7 +48,6 @@ def logger_init(config):
     wandb.watch_called = False
     writer = 'wandb'
   elif logging_config['logger'] == 'tensorboard':
-    log_str = exp_str(config)
     log_path = os.path.join(logging_config['log_dir'], log_str)
     writer = SummaryWriter(log_path)
   else:
