@@ -16,6 +16,7 @@ class LargeLossMatters(nn.Module):
                  num_classes,
                  backbone='resnet50',
                  freeze_backbone=False,
+                 use_feature=False,
                  mod_schemes='LL-R',
                  delta_rel=0.1):
       super().__init__()
@@ -23,25 +24,32 @@ class LargeLossMatters(nn.Module):
       self.num_classes = num_classes
       self.mod_schemes = mod_schemes
       self.delta_rel = delta_rel / 100
+      self.use_feature = use_feature
       self.clean_rate = 1.0
 
-      if backbone == 'resnet50':
+      if use_feature:
+        self.backbone = None
+      elif backbone == 'resnet50':
         self.backbone = torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.DEFAULT)
-        self.backbone = nn.Sequential(*list(self.backbone.children())[:-2]) # (N, 2048, 7, 7)
+        self.backbone = nn.Sequential(*list(self.backbone.children())[:-2]) # (N, 2048, 14, 14)
       else:
         raise NotImplementedError
       
-      if freeze_backbone:
-        for param in self.backbone.parameters():
-          param.requires_grad = False
-      else:
-        for param in self.backbone.parameters():
-          param.requires_grad = True
+      if not use_feature:
+        if freeze_backbone:
+          for param in self.backbone.parameters():
+            param.requires_grad = False
+        else:
+          for param in self.backbone.parameters():
+            param.requires_grad = True
       
       self.fc = nn.Linear(2048, num_classes)
     
     def forward(self, x):
-      features = self.backbone(x) # (N, 2048, 7, 7)
+      if self.backbone is not None:
+        features = self.backbone(x) # (N, 2048, 14, 14)
+      else:
+        features = x
 
       # adaptive global average pooling
       features = F.adaptive_avg_pool2d(features, (1)).squeeze(-1).squeeze(-1) # (N, 2048, 1, 1)
@@ -57,8 +65,8 @@ class LargeLossMatters(nn.Module):
       """
       preds = self.forward(x)
 
-      batch_size = int(x.shape[0])
-      num_classes = int(x.shape[1])
+      batch_size = int(labels.shape[0])
+      num_classes = int(labels.shape[1])
 
       loss_fn = nn.BCEWithLogitsLoss(reduction='none')
       loss_matrix = loss_fn(preds, labels) # (N, num_classes)
@@ -78,7 +86,13 @@ class LargeLossMatters(nn.Module):
         raise NotImplementedError
       
       unobserved_loss = (labels == 0).bool() * loss_matrix # (N)
-      topk = torch.topk(unobserved_loss.flatten(), k)
+      try:
+        topk = torch.topk(unobserved_loss.flatten(), k)
+      except:
+        print(batch_size)
+        print(num_classes)
+        print(k)
+        raise NotImplementedError('topk error')
       topk_lossval = topk.values[-1]
       correction_idx = torch.where(unobserved_loss > topk_lossval)
 

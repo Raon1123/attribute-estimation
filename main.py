@@ -4,7 +4,7 @@ import argparse
 
 import torch
 
-from attributedataset.datasets import get_dataloader
+from attributedataset.datasetutils import get_dataloader
 
 import models.modelutils as modelutils
 import utils.epochs as epochs
@@ -63,6 +63,7 @@ def main(config):
 def argparser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, default='config.yml')
+    parser.add_argument('--feature', action='store_true')
     return parser.parse_args()
 
 
@@ -72,4 +73,11 @@ if __name__ == "__main__":
     config = load_config(args)
     print(config)
 
+    if args.feature:
+        from attributedataset.datasetutils import generate_feature
+        generate_feature(config)
+        exit(0)
+    
     main(config)
+
+    exit(0)
