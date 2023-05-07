@@ -13,20 +13,25 @@ from attributedataset.datasets import AttributeDataset, FeatureDataset
 
 
 def get_transforms(config):
+    """
+    Get the transforms for training and testing.
+
+    Input
+    - config: config variable for setting, see load_config() in main.py
+    """
     imagenet_mean = [0.485, 0.456, 0.406]
     imagenet_std = [0.229, 0.224, 0.225]
 
     dataset_name = config['DATASET']['name']
-
-    if dataset_name == 'rap1':
+    
+    if dataset_name  == 'rap1':
         train_transform = transforms.Compose([
-            transforms.Resize((448, 224), antialias=None),
-            transforms.RandomHorizontalFlip(0.5),
+            transforms.Resize((448,448), antialias=None),
             transforms.ToTensor(),
             transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
         ])
         test_transform = transforms.Compose([
-            transforms.Resize((448, 224), antialias=None),
+            transforms.Resize((448,448), antialias=None),
             transforms.ToTensor(),
             transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
         ])
@@ -47,6 +52,12 @@ def get_transforms(config):
 
 
 def get_dataset(config):
+    """
+    Get the dataset for training and testing.
+
+    Input
+    - config: config variable for setting, see load_config() in main.py
+    """
     try:
         use_feature = config['DATASET']['use_feature']
     except:
@@ -105,6 +116,12 @@ def get_dataset(config):
 
 
 def get_dataloader(config):
+    """
+    Get the dataloader for training and testing.
+
+    Input
+    - config: config variable for setting, see load_config() in main.py
+    """
     train_dataset, test_dataset, num_classes = get_dataset(config)
 
     loader_config = config['loader']
@@ -126,6 +143,13 @@ def get_dataloader(config):
 
 
 def generate_feature(config):
+    """
+    Generate the feature vector for training and testing.
+    Make sure the feature_path is defined in config file.
+    
+    Input
+    - config: config variable for setting, see load_config() in main.py
+    """
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # check if feature exists

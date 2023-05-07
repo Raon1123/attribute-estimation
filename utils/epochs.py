@@ -76,7 +76,7 @@ def update_epoch(model, config):
         model.decrease_clean_rate()
 
 
-def evaluate_result(model, test_dataloader, epoch, config, writer, device='cpu'):
+def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=False):
     """
     Evaluate result of model (mAP, AP etc.)
     """
@@ -107,5 +107,18 @@ def evaluate_result(model, test_dataloader, epoch, config, writer, device='cpu')
     acc, prec, recall, f1 = criteria.example_based(pred, gt)
 
     metrics = {'mA': mA, 'acc': acc, 'prec': prec, 'recall': recall, 'f1': f1}
+
+    if saving:
+        # save ground truth and prediction
+        gt_path = config['LOGGING']['log_dir'] + f'/gt_{epoch}.pth'
+        pred_path = config['LOGGING']['log_dir'] + f'/pred_{epoch}.pth'
+        np.save(gt_path, gt)
+        np.save(pred_path, pred)
+
+        # save metrics
+        metrics_path = config['LOGGING']['log_dir'] + f'/metrics_{epoch}.pkl'
+        with open(metrics_path, 'wb') as f:
+            pickle.dump(metrics, f)
+        
 
     return metrics

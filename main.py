@@ -48,16 +48,12 @@ def main(config):
         logging.log(writer, test_loss, epoch, 'test', config)
 
         metrics = epochs.evaluate_result(
-            model, test_dataloader, epoch, config, writer, device)
+            model, test_dataloader, epoch, config, device)
         logging.log_metrics(writer, metrics, epoch, config)
 
     logging.save_model(model, config)
     metrics = epochs.evaluate_result(
-        model, test_dataloader, epoch, config, writer, device)
-    
-    # write to text
-    with open('result.txt', 'w') as f:
-        f.write(str(metrics))
+        model, test_dataloader, epoch, config, device, save=True)
 
 
 def argparser():
