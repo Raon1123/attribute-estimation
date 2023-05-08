@@ -7,7 +7,14 @@ from models.largeloss import LargeLossMatters
 
 import utils.logging as logging
 
-def get_model(config, num_classes):
+def get_model(config, num_classes, use_feature=False):
+    """
+    Get the model from config
+
+    Input
+    - config: config variable for setting, see load_config() in main.py
+    - num_classes: number of classes in the dataset
+    """
     if config['LOGGING']['load_model']:
         model = logging.load_model(model, config)
         return model
@@ -15,10 +22,6 @@ def get_model(config, num_classes):
     model_config = config['METHOD']
 
     if model_config['name'] == 'LargeLossMatters':
-        try:
-            use_feature = config['DATASET']['use_feature']
-        except:
-            use_feature = False
         try:
             model = LargeLossMatters(
                 num_classes=num_classes,

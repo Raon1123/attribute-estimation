@@ -10,6 +10,7 @@ from torchvision import transforms
 from torchvision.models import resnet50
 
 from attributedataset.datasets import AttributeDataset, FeatureDataset
+from models.modelutils import get_model
 
 
 def get_transforms(config):
@@ -26,12 +27,12 @@ def get_transforms(config):
     
     if dataset_name  == 'rap1':
         train_transform = transforms.Compose([
-            transforms.Resize((448,448), antialias=None),
+            transforms.Resize((448,224), antialias=True),
             transforms.ToTensor(),
             transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
         ])
         test_transform = transforms.Compose([
-            transforms.Resize((448,448), antialias=None),
+            transforms.Resize((448,224), antialias=True),
             transforms.ToTensor(),
             transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
         ])
@@ -150,7 +151,7 @@ def generate_feature(config):
     Input
     - config: config variable for setting, see load_config() in main.py
     """
-    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    device = config['device']
 
     # check if feature exists
     feature_path = config['DATASET']['feature_path']
@@ -166,11 +167,7 @@ def generate_feature(config):
 
     train_dataloader, test_dataloader, num_classes = get_dataloader(config)
 
-    model = resnet50(weights=torchvision.models.ResNet50_Weights.DEFAULT)
-    model = nn.Sequential(*list(model.children())[:-2]) # (N, 2048, 7, 7)
-    model = model.to(device)
-
-    model.eval()
+    model = get_model(config, num_classes, use_feature=False).to(device)
 
     train_feature, test_feature = [], []
     train_label, test_label = [], []
@@ -178,13 +175,13 @@ def generate_feature(config):
     with torch.no_grad():
         for img, label in train_dataloader:
             img = img.to(device)
-            feature = model(img)
+            feature = model.feature(img)
             train_feature.append(feature.cpu())
             train_label.append(label)
         
         for img, label in test_dataloader:
             img = img.to(device)
-            feature = model(img)
+            feature = model.feature(img)
             test_feature.append(feature.cpu())
             test_label.append(label)
 

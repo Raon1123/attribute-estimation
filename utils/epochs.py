@@ -119,6 +119,9 @@ def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=
         metrics_path = config['LOGGING']['log_dir'] + f'/metrics_{epoch}.pkl'
         with open(metrics_path, 'wb') as f:
             pickle.dump(metrics, f)
+
+        print("Experiment Result")
+        print(f"mA: {mA.mean():.4f}, acc: {acc.mean():.4f}, prec: {prec.mean():.4f}, recall: {recall.mean():.4f}, f1: {f1.mean():.4f}")
         
 
     return metrics

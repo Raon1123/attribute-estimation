@@ -46,16 +46,19 @@ class LargeLossMatters(nn.Module):
       self.fc = nn.Linear(2048, num_classes)
     
     def forward(self, x):
-      if self.backbone is not None:
-        features = self.backbone(x) # (N, 2048, 14, 14)
-      else:
-        features = x
-
-      # adaptive global average pooling
-      features = F.adaptive_avg_pool2d(features, (1)).squeeze(-1).squeeze(-1) # (N, 2048, 1, 1)
-      
+      features = self.feature(x)
       logits = self.fc(features) # (N, num_classes)
       return logits
+    
+    def feature(self, x):
+      if self.backbone is not None:
+        features = self.backbone(x) # (N, 2048, 14, 14)
+        # adaptive global average pooling
+        features = F.adaptive_avg_pool2d(features, (1)).squeeze(-1).squeeze(-1) # (N, 2048, 1, 1)
+      else:
+        features = x
+      
+      return features
     
     def loss(self, x, labels):
       """

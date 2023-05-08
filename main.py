@@ -20,9 +20,13 @@ def load_config(args):
 def main(config):
     # define device
     device = config['device']
+    try:
+        use_feature = config['DATASET']['use_feature']
+    except:
+        use_feature = False
 
     train_dataloader, test_dataloader, num_classes = get_dataloader(config)
-    model = modelutils.get_model(config, num_classes).to(device)
+    model = modelutils.get_model(config, num_classes, use_feature=use_feature).to(device)
     writer = logging.logger_init(config)
 
     # define optimizer
@@ -53,7 +57,7 @@ def main(config):
 
     logging.save_model(model, config)
     metrics = epochs.evaluate_result(
-        model, test_dataloader, epoch, config, device, save=True)
+        model, test_dataloader, epoch, config, device, saving=True)
 
 
 def argparser():
@@ -72,7 +76,6 @@ if __name__ == "__main__":
     if args.feature:
         from attributedataset.datasetutils import generate_feature
         generate_feature(config)
-        exit(0)
     
     main(config)
 
