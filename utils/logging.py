@@ -1,6 +1,7 @@
 import os
 import pickle
 
+import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
 try:
@@ -62,7 +63,7 @@ def logger_init(config):
   return writer
 
 
-def log(writer, loss, epoch, mode, config=None):
+def log_loss(writer, loss, epoch, mode, config=None):
   if writer == 'wandb':
     wandb.log({f'{mode}_loss': loss}, step=epoch)
   else:
@@ -85,3 +86,23 @@ def log_metrics(writer, metrics, epoch, config=None):
         writer.add_scalar(k, v, epoch)
     except:
       raise NotImplementedError
+    
+
+def write_metrics(gt, preds, metrics, epoch, config):
+  logging_config = config['LOGGING']
+  log_str = exp_str(config)
+  log_path = os.path.join(logging_config['log_dir'], log_str)
+
+  # make directory
+  if not os.path.exists(log_path):
+    os.makedirs(log_path)
+
+  gt_path = os.path.join(log_path, f'gt_{epoch}.pth')
+  preds_path = os.path.join(log_path, f'preds_{epoch}.pth')
+
+  np.save(gt_path, gt)
+  np.save(preds_path, preds)
+
+  metrics_path = os.path.join(log_path, f'metrics_{epoch}.pkl')
+  with open(metrics_path, 'wb') as f:
+    pickle.dump(metrics, f)
