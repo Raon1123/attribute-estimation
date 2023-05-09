@@ -24,30 +24,20 @@ def get_transforms(config):
     imagenet_std = [0.229, 0.224, 0.225]
 
     dataset_name = config['DATASET']['name']
-    
-    if dataset_name  == 'rap1':
-        train_transform = transforms.Compose([
-            transforms.Resize((448,224), antialias=True),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
-        ])
-        test_transform = transforms.Compose([
-            transforms.Resize((448,224), antialias=True),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
-        ])
-    else:
-        train_transform = transforms.Compose([
-            transforms.Resize((448,448), antialias=None),
-            transforms.RandomHorizontalFlip(0.5),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
-        ])
-        test_transform = transforms.Compose([
-            transforms.Resize((448,448), antialias=None),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
-        ])
+    input_size = config['DATASET']['transforms']['input_size']
+    input_ratio = config['DATASET']['transforms']['input_ratio']
+    resize = (int(input_size*input_ratio), input_size)
+
+    train_transform = transforms.Compose([
+        transforms.Resize(resize, antialias=True),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
+    ])
+    test_transform = transforms.Compose([
+        transforms.Resize(resize, antialias=True),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
+    ])
     
     return train_transform, test_transform
 
