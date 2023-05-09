@@ -3,6 +3,7 @@ import torch
 import pickle
 
 import utils.criteria as criteria
+import utils.logging as logging
 
 def train_epoch(model, train_dataloader, optimizer, config, device='cpu'):
     """
@@ -109,16 +110,7 @@ def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=
     metrics = {'mA': mA, 'acc': acc, 'prec': prec, 'recall': recall, 'f1': f1}
 
     if saving:
-        # save ground truth and prediction
-        gt_path = config['LOGGING']['log_dir'] + f'/gt_{epoch}.pth'
-        pred_path = config['LOGGING']['log_dir'] + f'/pred_{epoch}.pth'
-        np.save(gt_path, gt)
-        np.save(pred_path, pred)
-
-        # save metrics
-        metrics_path = config['LOGGING']['log_dir'] + f'/metrics_{epoch}.pkl'
-        with open(metrics_path, 'wb') as f:
-            pickle.dump(metrics, f)
+        logging.write_metrics(gt, pred, metrics, epoch, config)
 
         print("Experiment Result")
         print(f"mA: {mA.mean():.4f}, acc: {acc.mean():.4f}, prec: {prec.mean():.4f}, recall: {recall.mean():.4f}, f1: {f1.mean():.4f}")

@@ -48,17 +48,17 @@ def main(config):
 
         pbar.set_description(
             f"Epoch {epoch+1} | Train Loss: {train_loss:.5f} | Test Loss: {test_loss:.5f}")
-        logging.log(writer, train_loss, epoch, 'train', config)
-        logging.log(writer, test_loss, epoch, 'test', config)
+        logging.log_loss(writer, train_loss, epoch, 'train', config)
+        logging.log_loss(writer, test_loss, epoch, 'test', config)
 
         metrics = epochs.evaluate_result(
             model, test_dataloader, epoch, config, device)
         logging.log_metrics(writer, metrics, epoch, config)
 
-    logging.save_model(model, config)
     metrics = epochs.evaluate_result(
         model, test_dataloader, epoch, config, device, saving=True)
-
+    logging.save_model(model, config)
+    
 
 def argparser():
     parser = argparse.ArgumentParser()
