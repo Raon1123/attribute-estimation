@@ -12,7 +12,6 @@ def preprocess_rap1(args):
     data_len = 41585
 
     data_root = args.data_dir
-    save_root = args.save_dir
     idx = args.i
 
     data = loadmat(os.path.join(data_root, 'RAP_annotation/RAP_annotation.mat'))
@@ -40,6 +39,10 @@ def preprocess_rap1(args):
     train_label = label[train, :]
     test_label = label[test, :]
 
+    # masking the label
+    train_label = get_masked_label(train_label, args.mask_rate)
+    test_label = get_masked_label(test_label, args.mask_rate)
+
     proc_dict = {
         'img_root': img_root,
         'label_str': attr_name,
@@ -49,15 +52,11 @@ def preprocess_rap1(args):
         'test_label': test_label
     }
 
-    with open(os.path.join(save_root, 'RAPv1.pkl'), 'wb') as f:
-        pickle.dump(proc_dict, f)
-
     return proc_dict
 
 
 def preprocess_pascal(args):
     data_root = args.data_dir
-    save_root = args.save_dir
     img_root = os.path.join(data_root, 'VOCdevkit', 'VOC2012', 'JPEGImages')
 
     catName_to_catID = {
@@ -110,6 +109,10 @@ def preprocess_pascal(args):
             label_indicies = np.array(ann_dict[cur_img])
             label_matrix[phase][i, label_indicies] = 1.0
 
+    # masking the label
+    label_matrix['train'] = get_masked_label(label_matrix['train'], args.mask_rate)
+    label_matrix['val'] = get_masked_label(label_matrix['val'], args.mask_rate)
+
     proc_dict = {
         'img_root': img_root,
         'label_str': list(catName_to_catID.keys()),
@@ -119,15 +122,11 @@ def preprocess_pascal(args):
         'test_label': label_matrix['val'].astype(np.float16)
     }
 
-    with open(os.path.join(save_root, 'PASCAL.pkl'), 'wb') as f:
-        pickle.dump(proc_dict, f)
-
     return proc_dict
 
 
 def preprocess_coco(args):
     data_root = args.data_dir
-    save_root = args.save_dir
 
     json_train_path = os.path.join(data_root, 'annotations', 'instances_train2014.json')
     json_test_path = os.path.join(data_root, 'annotations', 'instances_val2014.json')
@@ -190,6 +189,10 @@ def preprocess_coco(args):
         test_label_matrix[row_index, category_index] = 1.0
         test_image_ids[row_index] = int(image_id)
 
+    # masking the label
+    train_label_matrix = get_masked_label(train_label_matrix, args.mask_rate)
+    test_label_matrix = get_masked_label(test_label_matrix, args.mask_rate)
+
     # image file name
     train_image = ['train2014/COCO_train2014_{:012d}.jpg'.format(int(train_image_ids[i])) for i in range(num_train_images)]
     test_image = ['val2014/COCO_val2014_{:012d}.jpg'.format(int(test_image_ids[i])) for i in range(num_test_images)]
@@ -204,11 +207,32 @@ def preprocess_coco(args):
         'test_label': test_label_matrix.astype(np.float16)
     }
 
-    with open(os.path.join(save_root, 'COCO.pkl'), 'wb') as f:
-        pickle.dump(proc_dict, f)
-
     return proc_dict
 
+
+def get_masked_label(labels, masking_rate, masking_type='random'):
+    """
+    Generate masked label matrix
+
+    Input
+    - labels: label numpy matrix
+    - masking_rate: masking rate, when -1.0, masking all labels except for one
+    - masking_type: masking type, random or frequency
+    """
+    num_instances, num_classes = labels.shape
+    if masking_rate == -1.0:
+        num_masked_labels = num_classes - 1
+    else:
+        num_masked_labels = int(num_classes * masking_rate)
+
+    if masking_type != 'random':
+        raise NotImplementedError
+
+    for label_instance in labels:
+        masked_labels = np.random.choice(num_classes, num_masked_labels, replace=False)
+        label_instance[masked_labels] = 0.0
+
+    return labels
 
 
 def argparser():
@@ -224,6 +248,10 @@ def argparser():
                         help='save preprocessed results')
     parser.add_argument('-i', type=int, default=0, choices=range(5),
                         help='index of RAPv1 dataset')
+    parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--force', action='store_true', default=False)
+    parser.add_argument('--masking_rate', type=float, default=-1.0)
+    parser.add_argument('--masking_type', type=str, default='random', choices=['random', 'frequency']) # TODO add maksing type
     
     args = parser.parse_args()
     return args
@@ -234,6 +262,14 @@ def argparser():
 if __name__ == "__main__":
     args = argparser()
 
+    save_path = os.path.join(args.save_dir, args.dataset + '_' + args.seed + '.pkl')
+    # check if save path exists
+    if os.path.exists(save_path) and not args.force:
+        raise ValueError('Save path already exists: {}. If you generate even exist, please use --force option'.format(save_path))
+
+    # set seed
+    np.random.seed(args.seed)
+
     if args.dataset == 'rap1':
         proc_dict = preprocess_rap1(args)
     elif args.dataset == 'pascal':
@@ -242,6 +278,10 @@ if __name__ == "__main__":
         proc_dict = preprocess_coco(args)
     else:
         raise NotImplementedError
+    
+    # saving proc_dict
+    with open(save_path, 'wb') as f:
+        pickle.dump(proc_dict, f)
     
     print('Preprocessing done!')
     print('Saved at {}'.format(args.save_dir))

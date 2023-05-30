@@ -1,1 +1,1 @@
-python preprocess.py -D coco -R /home/ayp/dataset/coco -S /home/ayp/dataset/attribute
+python preprocess.py -D coco -R ~/share_projects/datasets/coco -S ~/share_projects/datasets/attribute
