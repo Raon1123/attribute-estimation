@@ -40,8 +40,7 @@ def preprocess_rap1(args):
     test_label = label[test, :]
 
     # masking the label
-    train_label = get_masked_label(train_label, args.mask_rate)
-    test_label = get_masked_label(test_label, args.mask_rate)
+    train_mask = get_masked_label(train_label, args.masking_rate)
 
     proc_dict = {
         'img_root': img_root,
@@ -49,6 +48,7 @@ def preprocess_rap1(args):
         'train_img_file': train_img_file,
         'test_img_file': test_img_file,
         'train_label': train_label,
+        'train_mask': train_mask,
         'test_label': test_label
     }
 
@@ -110,8 +110,7 @@ def preprocess_pascal(args):
             label_matrix[phase][i, label_indicies] = 1.0
 
     # masking the label
-    label_matrix['train'] = get_masked_label(label_matrix['train'], args.mask_rate)
-    label_matrix['val'] = get_masked_label(label_matrix['val'], args.mask_rate)
+    train_mask = get_masked_label(label_matrix['train'], args.masking_rate)
 
     proc_dict = {
         'img_root': img_root,
@@ -119,6 +118,7 @@ def preprocess_pascal(args):
         'train_img_file': image_list['train'],
         'test_img_file': image_list['val'],
         'train_label': label_matrix['train'].astype(np.float16),
+        'train_mask': train_mask,
         'test_label': label_matrix['val'].astype(np.float16)
     }
 
@@ -190,8 +190,7 @@ def preprocess_coco(args):
         test_image_ids[row_index] = int(image_id)
 
     # masking the label
-    train_label_matrix = get_masked_label(train_label_matrix, args.mask_rate)
-    test_label_matrix = get_masked_label(test_label_matrix, args.mask_rate)
+    train_mask = get_masked_label(train_label_matrix, args.masking_rate)
 
     # image file name
     train_image = ['train2014/COCO_train2014_{:012d}.jpg'.format(int(train_image_ids[i])) for i in range(num_train_images)]
@@ -204,6 +203,7 @@ def preprocess_coco(args):
         'train_img_file': train_image,
         'test_img_file': test_image,
         'train_label': train_label_matrix.astype(np.float16),
+        'train_mask': train_mask,
         'test_label': test_label_matrix.astype(np.float16)
     }
 
@@ -218,8 +218,13 @@ def get_masked_label(labels, masking_rate, masking_type='random'):
     - labels: label numpy matrix
     - masking_rate: masking rate, when -1.0, masking all labels except for one
     - masking_type: masking type, random or frequency
+
+    Output
+    - masked label matrix
     """
     num_instances, num_classes = labels.shape
+    masked_labels = np.zeros((num_instances, num_classes))
+
     if masking_rate == -1.0:
         num_masked_labels = num_classes - 1
     else:
@@ -227,12 +232,12 @@ def get_masked_label(labels, masking_rate, masking_type='random'):
 
     if masking_type != 'random':
         raise NotImplementedError
-
-    for label_instance in labels:
-        masked_labels = np.random.choice(num_classes, num_masked_labels, replace=False)
-        label_instance[masked_labels] = 0.0
-
-    return labels
+    else:
+        # iterate per instance
+        for mask, instance in zip(masked_labels, labels):
+            mask = np.random.choice(num_classes, num_masked_labels, replace=False)
+    
+    return masked_labels
 
 
 def argparser():
@@ -262,7 +267,7 @@ def argparser():
 if __name__ == "__main__":
     args = argparser()
 
-    save_path = os.path.join(args.save_dir, args.dataset + '_' + args.seed + '.pkl')
+    save_path = os.path.join(args.save_dir, args.dataset + '_' + str(args.seed) + '.pkl')
     # check if save path exists
     if os.path.exists(save_path) and not args.force:
         raise ValueError('Save path already exists: {}. If you generate even exist, please use --force option'.format(save_path))
