@@ -16,7 +16,7 @@ class AttributeDataset(Dataset):
         super().__init__()
 
         self.img_root = img_root
-        self.label_str = label_str
+        self._label_str = label_str
         self.img_file = img_file
         self.label = label
         self.transform = transform
@@ -32,7 +32,7 @@ class AttributeDataset(Dataset):
 
         if self.masks is not None:
             mask = 1 - self.masks[idx]
-            image = image * mask
+            label = label * mask
 
         if self.transform:
             image = self.transform(image)
@@ -41,7 +41,7 @@ class AttributeDataset(Dataset):
     
     @property
     def label_str(self):
-        return self.label_str
+        return self._label_str
     
     @property
     def num_classes(self):
@@ -69,7 +69,7 @@ class FeatureDataset(Dataset):
                  ) -> None:
         super().__init__()
 
-        self.label_str = label_str
+        self._label_str = label_str
         self.feature = feature
         self.label = label
         self.masks = masks
@@ -83,13 +83,13 @@ class FeatureDataset(Dataset):
 
         if self.masks is not None:
             mask = 1 - self.masks[idx]
-            feature = feature * mask
+            label = label * mask
 
         return feature, label
     
     @property
     def label_str(self):
-        return self.label_str
+        return self._label_str
     
     @property
     def num_classes(self):

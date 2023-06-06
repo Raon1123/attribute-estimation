@@ -84,7 +84,7 @@ def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=
     model.eval()
 
     data_size = len(test_dataloader.dataset)
-    num_classes = test_dataloader.dataset.get_num_classes()
+    num_classes = test_dataloader.dataset.num_classes
 
     pred, gt = np.zeros((data_size, num_classes)), np.zeros((data_size, num_classes))
     start_idx = 0
