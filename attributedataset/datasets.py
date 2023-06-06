@@ -11,6 +11,7 @@ class AttributeDataset(Dataset):
                  label_str,
                  img_file,
                  label,
+                 masks=None,
                  transform=None) -> None:
         super().__init__()
 
@@ -19,6 +20,7 @@ class AttributeDataset(Dataset):
         self.img_file = img_file
         self.label = label
         self.transform = transform
+        self.masks = masks
 
     def __len__(self) -> int:
         return len(self.img_file)
@@ -28,22 +30,34 @@ class AttributeDataset(Dataset):
         image = Image.open(img_path).convert('RGB') # (H, W, C)
         label = self.label[idx]
 
+        if self.masks is not None:
+            mask = 1 - self.masks[idx]
+            image = image * mask
+
         if self.transform:
             image = self.transform(image)
 
         return image, label
     
-    def get_label_str(self):
-        """
-        Return the list of attribute names.
-        """
+    @property
+    def label_str(self):
         return self.label_str
     
-    def get_num_classes(self):
-        """
-        Return the number of classes.
-        """
+    @property
+    def num_classes(self):
         return len(self.label_str)
+    
+    def get_mask(self, idx):
+        if self.masks is None:
+            return None
+        return self.masks[idx]
+    
+    def get_before_mask(self, idx):
+        label = self.label[idx]
+        return label
+    
+    def get_image_path(self, idx):
+        return os.path.join(self.img_root, self.img_file[idx])
     
 
 class FeatureDataset(Dataset):
@@ -51,12 +65,14 @@ class FeatureDataset(Dataset):
                  label_str,
                  feature,
                  label,
+                 masks=None,
                  ) -> None:
         super().__init__()
 
         self.label_str = label_str
         self.feature = feature
         self.label = label
+        self.masks = masks
 
     def __len__(self) -> int:
         return len(self.feature)
@@ -65,18 +81,28 @@ class FeatureDataset(Dataset):
         feature = self.feature[idx]
         label = self.label[idx]
 
+        if self.masks is not None:
+            mask = 1 - self.masks[idx]
+            feature = feature * mask
+
         return feature, label
     
-    def get_label_str(self):
-        """
-        Return the list of attribute names.
-        """
+    @property
+    def label_str(self):
         return self.label_str
     
-    def get_num_classes(self):
-        """
-        Return the number of classes.
-        """
+    @property
+    def num_classes(self):
         return len(self.label_str)
     
+    def get_mask(self, idx):
+        if self.masks is None:
+            return None
+        return self.masks[idx]
     
+    def get_before_mask(self, idx):
+        label = self.label[idx]
+        return label
+    
+    def get_image_path(self, idx):
+        return os.path.join(self.img_root, self.img_file[idx])

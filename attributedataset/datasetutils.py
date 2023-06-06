@@ -79,6 +79,7 @@ def get_dataset(config):
 
     label_str = proc_dict['label_str']
     train_label = proc_dict['train_label']
+    train_mask = proc_dict['train_mask']
     test_label = proc_dict['test_label']
 
     num_classes = len(label_str)
@@ -89,6 +90,7 @@ def get_dataset(config):
                                         label_str, 
                                         train_img_file, 
                                         train_label,
+                                        train_mask,
                                         transform=train_transform)
         test_dataset = AttributeDataset(img_root, 
                                         label_str, 
@@ -98,7 +100,8 @@ def get_dataset(config):
     else:
         train_dataset = FeatureDataset(label_str,
                                        train_feature,
-                                       train_label)
+                                       train_label,
+                                       train_mask)
         test_dataset = FeatureDataset(label_str,
                                       test_feature,
                                       test_label)

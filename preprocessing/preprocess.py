@@ -235,7 +235,8 @@ def get_masked_label(labels, masking_rate, masking_type='random'):
     else:
         # iterate per instance
         for mask, instance in zip(masked_labels, labels):
-            mask = np.random.choice(num_classes, num_masked_labels, replace=False)
+            mask_idx = np.random.choice(num_classes, num_masked_labels, replace=False)
+            mask[mask_idx] = 1.0
     
     return masked_labels
 
