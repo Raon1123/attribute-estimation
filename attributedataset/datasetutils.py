@@ -92,6 +92,12 @@ def get_dataset(config):
                                         train_label,
                                         train_mask,
                                         transform=train_transform)
+        train_unmask_dataset = AttributeDataset(img_root,
+                                                label_str,
+                                                train_img_file,
+                                                train_label,
+                                                masks=None,
+                                                transform=train_transform)
         test_dataset = AttributeDataset(img_root, 
                                         label_str, 
                                         test_img_file,
@@ -102,11 +108,15 @@ def get_dataset(config):
                                        train_feature,
                                        train_label,
                                        train_mask)
+        train_unmask_dataset = FeatureDataset(label_str,
+                                              train_feature,
+                                              train_label,
+                                              masks=None)
         test_dataset = FeatureDataset(label_str,
                                       test_feature,
                                       test_label)
 
-    return train_dataset, test_dataset, num_classes
+    return train_dataset, train_unmask_dataset, test_dataset, num_classes
 
 
 def get_dataloader(config):
@@ -116,7 +126,7 @@ def get_dataloader(config):
     Input
     - config: config variable for setting, see load_config() in main.py
     """
-    train_dataset, test_dataset, num_classes = get_dataset(config)
+    train_dataset, train_unmask_dataset, test_dataset, num_classes = get_dataset(config)
 
     loader_config = config['loader']
 
@@ -126,6 +136,12 @@ def get_dataloader(config):
         shuffle=True,
         num_workers=loader_config['num_workers']
     )
+    train_unmask_dataloader = torch.utils.data.DataLoader(
+        train_unmask_dataset,
+        batch_size=loader_config['batch_size'],
+        shuffle=False,
+        num_workers=loader_config['num_workers']
+    )
     test_dataloader = torch.utils.data.DataLoader(
         test_dataset,
         batch_size=loader_config['batch_size'],
@@ -133,7 +149,7 @@ def get_dataloader(config):
         num_workers=loader_config['num_workers']
     )
 
-    return train_dataloader, test_dataloader, num_classes
+    return train_dataloader, train_unmask_dataloader, test_dataloader, num_classes
 
 
 def generate_feature(config):
