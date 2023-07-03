@@ -5,6 +5,26 @@ import pickle
 import utils.criteria as criteria
 import utils.logging as logging
 
+def parse_batch(batch, device='cpu'):
+    """
+    Parse the batch.
+
+    Args:
+        batch (tuple): Batch of data and target.
+        device (str): Device to be used.
+
+    Returns:
+        tuple: Parsed batch.
+    """
+    data, target, mask = batch
+    
+    # masking target
+    target = target * (1 - mask)
+
+    data, target = data.to(device).float(), target.to(device)
+    return data, target, mask
+
+
 def train_epoch(model, train_dataloader, optimizer, config, device='cpu'):
     """
     Train the model for one epoch.
@@ -20,8 +40,8 @@ def train_epoch(model, train_dataloader, optimizer, config, device='cpu'):
     """
     model.train()
     train_loss = 0.0
-    for (data, target) in train_dataloader:
-        data, target = data.to(device).float(), target.to(device)
+    for batch in train_dataloader:
+        data, target, _ = parse_batch(batch, device)
 
         optimizer.zero_grad()
         if config['METHOD']['name'] == 'LargeLossMatters':
@@ -52,8 +72,8 @@ def test_epoch(model, test_dataloader, config, device='cpu'):
     """
     model.eval()
     test_loss = 0.0
-    for (data, target) in test_dataloader:
-        data, target = data.to(device).float(), target.to(device)
+    for batch in test_dataloader:
+        data, target, _ = parse_batch(batch, device)
 
         with torch.no_grad():
             if config['METHOD']['name'] == 'LargeLossMatters':
@@ -80,6 +100,7 @@ def update_epoch(model, config):
 def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=False):
     """
     Evaluate result of model (mAP, AP etc.)
+    Evaluation without masking
     """
     model.eval()
 
@@ -88,7 +109,7 @@ def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=
 
     pred, gt = np.zeros((data_size, num_classes)), np.zeros((data_size, num_classes))
     start_idx = 0
-    for (data, target) in test_dataloader:
+    for (data, target, _) in test_dataloader:
         data = data.to(device).float()
 
         with torch.no_grad():
