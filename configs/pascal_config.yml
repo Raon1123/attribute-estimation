@@ -1,0 +1,35 @@
+device: cuda:0
+
+loader:
+  batch_size: 16
+  num_workers: 0
+  pin_memory: True
+  
+METHOD:
+  name: 'LargeLossMatters'
+  backbone: 'resnet50'
+  freeze_backbone: False
+  mod_scheme: 'LL-R'
+  delta_rel: 0.1
+
+OPTIMIZER:
+  name: 'Adam'
+  lr: 0.00001
+  weight_decay: 0.0005
+  epochs: 100
+
+DATASET:
+  name: 'pascal'
+  pkl_path: '/home/ayp/share_projects/datasets/attribute/pascal_42.pkl'
+  use_feature: False
+  transforms:
+    input_size: 224
+    input_ratio: 1.0
+
+LOGGING:
+  logger: 'wandb'
+  log_dir: './logs'
+  model_path: './save'
+  load_model: False
+  project: 'LargeLossMatters'
+  postfix: 'pascal_224'
