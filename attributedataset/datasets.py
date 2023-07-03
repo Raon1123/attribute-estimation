@@ -29,15 +29,16 @@ class AttributeDataset(Dataset):
         img_path = os.path.join(self.img_root, self.img_file[idx]) 
         image = Image.open(img_path).convert('RGB') # (H, W, C)
         label = self.label[idx]
+        mask = None
 
         if self.masks is not None:
-            mask = 1 - self.masks[idx]
-            label = label * mask
+            mask = self.masks[idx]
+            label = label * (1 - mask)
 
         if self.transform:
             image = self.transform(image)
 
-        return image, label
+        return image, label, mask
     
     @property
     def label_str(self):
@@ -80,12 +81,13 @@ class FeatureDataset(Dataset):
     def __getitem__(self, idx: int):
         feature = self.feature[idx]
         label = self.label[idx]
+        mask = None
 
         if self.masks is not None:
-            mask = 1 - self.masks[idx]
-            label = label * mask
+            mask = self.masks[idx]
+            label = label * (1 - mask)
 
-        return feature, label
+        return feature, label, mask
     
     @property
     def label_str(self):
