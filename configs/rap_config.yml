@@ -1,4 +1,4 @@
-device: cuda:1
+device: cuda:0
 
 loader:
   batch_size: 32
@@ -20,7 +20,7 @@ OPTIMIZER:
 
 DATASET:
   name: 'rap1'
-  pkl_path: '/home/ayp/share_projects/datasets/attribute/rap1_42.pkl'
+  pkl_path: '/home/mlv/dataset/attribute/rap1_42.pkl'
   use_feature: False
   transforms:
     input_size: 112

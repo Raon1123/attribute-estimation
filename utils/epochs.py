@@ -5,7 +5,7 @@ import pickle
 import utils.criteria as criteria
 import utils.logging as logging
 
-def parse_batch(batch, device='cpu'):
+def parse_batch(batch, masking=True, device='cpu'):
     """
     Parse the batch.
 
@@ -19,10 +19,11 @@ def parse_batch(batch, device='cpu'):
     data, target, mask = batch
     
     # masking target
-    target = target * (1 - mask)
+    if masking:
+        target = target * (1 - mask)
 
     data, target = data.to(device).float(), target.to(device)
-    return data, target, mask
+    return data, target
 
 
 def train_epoch(model, train_dataloader, optimizer, config, device='cpu'):
@@ -41,7 +42,7 @@ def train_epoch(model, train_dataloader, optimizer, config, device='cpu'):
     model.train()
     train_loss = 0.0
     for batch in train_dataloader:
-        data, target, _ = parse_batch(batch, device)
+        data, target = parse_batch(batch, device=device)
 
         optimizer.zero_grad()
         if config['METHOD']['name'] == 'LargeLossMatters':
@@ -73,7 +74,7 @@ def test_epoch(model, test_dataloader, config, device='cpu'):
     model.eval()
     test_loss = 0.0
     for batch in test_dataloader:
-        data, target, _ = parse_batch(batch, device)
+        data, target = parse_batch(batch, device=device)
 
         with torch.no_grad():
             if config['METHOD']['name'] == 'LargeLossMatters':
@@ -97,7 +98,7 @@ def update_epoch(model, config):
         model.decrease_clean_rate()
 
 
-def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=False):
+def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=False, masking=False):
     """
     Evaluate result of model (mAP, AP etc.)
     Evaluation without masking
@@ -109,8 +110,9 @@ def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=
 
     pred, gt = np.zeros((data_size, num_classes)), np.zeros((data_size, num_classes))
     start_idx = 0
-    for (data, target, _) in test_dataloader:
-        data = data.to(device).float()
+    for batch in test_dataloader:
+        data, target = parse_batch(batch, masking=masking, device='cpu')
+        data = data.to(device)
 
         with torch.no_grad():
             logits = model.forward(data)
@@ -128,7 +130,17 @@ def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=
     mA = criteria.mean_accuracy(pred, gt)
     acc, prec, recall, f1 = criteria.example_based(pred, gt)
 
-    metrics = {'mA': mA, 'acc': acc, 'prec': prec, 'recall': recall, 'f1': f1}
+    prefix = ''
+    if masking:
+        prefix = 'masked_'
+    else:
+        prefix = 'unmasked_'
+
+    metrics = {prefix+'mA': mA, 
+               prefix+'acc': acc, 
+               prefix+'prec': prec, 
+               prefix+'recall': recall, 
+               prefix+'f1': f1}
 
     if saving:
         logging.write_metrics(gt, pred, metrics, epoch, config)

@@ -90,14 +90,8 @@ def get_dataset(config):
                                         label_str, 
                                         train_img_file, 
                                         train_label,
-                                        train_mask,
+                                        masks=train_mask,
                                         transform=train_transform)
-        train_unmask_dataset = AttributeDataset(img_root,
-                                                label_str,
-                                                train_img_file,
-                                                train_label,
-                                                masks=None,
-                                                transform=train_transform)
         test_dataset = AttributeDataset(img_root, 
                                         label_str, 
                                         test_img_file,
@@ -107,16 +101,12 @@ def get_dataset(config):
         train_dataset = FeatureDataset(label_str,
                                        train_feature,
                                        train_label,
-                                       train_mask)
-        train_unmask_dataset = FeatureDataset(label_str,
-                                              train_feature,
-                                              train_label,
-                                              masks=None)
+                                       masks=train_mask)
         test_dataset = FeatureDataset(label_str,
                                       test_feature,
                                       test_label)
 
-    return train_dataset, train_unmask_dataset, test_dataset, num_classes
+    return train_dataset, test_dataset, num_classes
 
 
 def get_dataloader(config):
@@ -126,7 +116,7 @@ def get_dataloader(config):
     Input
     - config: config variable for setting, see load_config() in main.py
     """
-    train_dataset, train_unmask_dataset, test_dataset, num_classes = get_dataset(config)
+    train_dataset, test_dataset, num_classes = get_dataset(config)
 
     loader_config = config['loader']
 

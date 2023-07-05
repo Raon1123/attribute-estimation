@@ -15,12 +15,12 @@ METHOD:
 OPTIMIZER:
   name: 'Adam'
   lr: 0.00001
-  weight_decay: 0.0005
-  epochs: 100
+  weight_decay: 0.0
+  epochs: 10
 
 DATASET:
   name: 'pascal'
-  pkl_path: '/home/ayp/share_projects/datasets/attribute/pascal_42.pkl'
+  pkl_path: '/home/mlv/dataset/attribute/pascal_42.pkl'
   use_feature: False
   transforms:
     input_size: 224
