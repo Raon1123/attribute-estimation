@@ -20,7 +20,12 @@ def exp_str(config):
 def save_model(model, config):
   logging_config = config['LOGGING']
   log_str = exp_str(config)
-  model_path = os.path.join(logging_config['model_path'], log_str)
+
+  save_dir = logging_config['model_path']
+  if not os.path.exists(save_dir):
+    os.makedirs(save_dir)
+
+  model_path = os.path.join(save_dir, log_str)
 
   torch.save(model.state_dict(), model_path)
 
