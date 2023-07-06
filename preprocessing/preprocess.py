@@ -225,6 +225,9 @@ def get_masked_label(labels, masking_rate, masking_type='random'):
     num_instances, num_classes = labels.shape
     masked_labels = np.zeros((num_instances, num_classes))
 
+    if masking_rate == 0.0:
+        return masked_labels
+
     if masking_rate == -1.0:
         num_masked_labels = num_classes - 1
     else:
@@ -292,6 +295,7 @@ if __name__ == "__main__":
     print('Preprocessing done!')
     print('Saved at {}'.format(args.save_dir))
     print('Dataset: {}'.format(args.dataset))
+    print('Masking rate: {}'.format(args.masking_rate))
     print('Number of train images: {}'.format(len(proc_dict['train_img_file'])))
     print('Number of test images: {}'.format(len(proc_dict['test_img_file'])))
     print('Number of attributes: {}'.format(len(proc_dict['label_str'])))
