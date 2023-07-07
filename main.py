@@ -52,9 +52,9 @@ def main(config):
         logging.log_loss(writer, test_loss, epoch, 'test', config)
 
         msk_metrics = epochs.evaluate_result(
-            model, test_dataloader, epoch, config, device, masking=True)
+            model, train_dataloader, epoch, config, device, masking=True)
         metrics = epochs.evaluate_result(
-            model, test_dataloader, epoch, config, device, masking=False)
+            model, train_dataloader, epoch, config, device, masking=False)
         
         logging.log_metrics(writer, metrics, epoch, config)
         logging.log_metrics(writer, msk_metrics, epoch, config)

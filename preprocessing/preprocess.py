@@ -271,7 +271,8 @@ def argparser():
 if __name__ == "__main__":
     args = argparser()
 
-    save_path = os.path.join(args.save_dir, args.dataset + '_' + str(args.seed) + '.pkl')
+    pkl_file = '_'.join([args.dataset, str(args.masking_rate), str(args.seed),'preprocess.pkl'])
+    save_path = os.path.join(args.save_dir, pkl_file)
     # check if save path exists
     if os.path.exists(save_path) and not args.force:
         raise ValueError('Save path already exists: {}. If you generate even exist, please use --force option'.format(save_path))
@@ -293,7 +294,7 @@ if __name__ == "__main__":
         pickle.dump(proc_dict, f)
     
     print('Preprocessing done!')
-    print('Saved at {}'.format(args.save_dir))
+    print('Saved at {}'.format(save_path))
     print('Dataset: {}'.format(args.dataset))
     print('Masking rate: {}'.format(args.masking_rate))
     print('Number of train images: {}'.format(len(proc_dict['train_img_file'])))

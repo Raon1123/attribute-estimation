@@ -43,6 +43,7 @@ def train_epoch(model, train_dataloader, optimizer, config, device='cpu'):
     train_loss = 0.0
     for batch in train_dataloader:
         data, target = parse_batch(batch, device=device)
+        _, un_msk = parse_batch(batch, masking=False, device=device)
 
         optimizer.zero_grad()
         if config['METHOD']['name'] == 'LargeLossMatters':
@@ -148,5 +149,4 @@ def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=
         print("Experiment Result")
         print(f"mA: {mA.mean():.4f}, acc: {acc.mean():.4f}, prec: {prec.mean():.4f}, recall: {recall.mean():.4f}, f1: {f1.mean():.4f}")
         
-
     return metrics

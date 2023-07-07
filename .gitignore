@@ -9,6 +9,9 @@ config.yml
 configs/*
 wandb/*
 
+scripts/*
+preprocessing/visual_preprocess.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

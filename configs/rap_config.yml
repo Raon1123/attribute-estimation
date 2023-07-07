@@ -2,7 +2,7 @@ device: cuda:0
 
 loader:
   batch_size: 32
-  num_workers: 2
+  num_workers: 8
   pin_memory: True
   
 METHOD:
@@ -20,7 +20,7 @@ OPTIMIZER:
 
 DATASET:
   name: 'rap1'
-  pkl_path: '/home/mlv/dataset/attribute/rap1_42.pkl'
+  pkl_path: '/share_mnt/home/slurmayp/dataset/attribute/rap1_-1.0_42_preprocess.pkl'
   use_feature: False
   transforms:
     input_size: 112
@@ -31,5 +31,5 @@ LOGGING:
   log_dir: './logs'
   model_path: './save'
   load_model: False
-  project: 'LargeLossMatters'
-  postfix: 'rap_bsz32'
+  project: 'LargeLoss'
+  postfix: 'rap_msk-1'
