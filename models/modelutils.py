@@ -59,7 +59,6 @@ def get_optimizer(model, config):
         optimizer = optim.Adam(
             model.parameters(),
             lr=optim_config['lr'],
-            weight_decay=optim_config['weight_decay']
         )
 
     return optimizer
