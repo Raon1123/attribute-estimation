@@ -1,3 +1,4 @@
+import os
 import pickle
 import yaml
 
@@ -55,10 +56,12 @@ def get_dataset(config):
         use_feature = False
 
     # use features?
+    pkl_root = config['DATASET']['pkl_root']
     if use_feature:
-        pkl_path = config['DATASET']['feature_path']
+        pkl_file = config['DATASET']['feature_file']
     else:
-        pkl_path = config['DATASET']['pkl_path']
+        pkl_file = config['DATASET']['pkl_file']
+    pkl_path = os.path.join(pkl_root, pkl_file)
 
     try:
         with open(pkl_path, 'rb') as f:
