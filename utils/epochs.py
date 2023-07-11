@@ -41,12 +41,16 @@ def train_epoch(model, train_dataloader, optimizer, config, device='cpu'):
     """
     model.train()
     train_loss = 0.0
+
+    method_config = config['METHOD']
+    method_name = method_config['name']
+
     for batch in train_dataloader:
         data, target = parse_batch(batch, device=device)
         _, un_msk = parse_batch(batch, masking=False, device=device)
 
         optimizer.zero_grad()
-        if config['METHOD']['name'] == 'LargeLossMatters':
+        if method_name in ['LargeLossMatters', 'BoostCAM']:
             loss, correction_idx = model.loss(data, target)
             if config['METHOD']['mod_scheme'] == 'LL-Cp' and correction_idx is not None:
                 raise NotImplementedError
@@ -74,11 +78,15 @@ def test_epoch(model, test_dataloader, config, device='cpu'):
     """
     model.eval()
     test_loss = 0.0
+
+    method_config = config['METHOD']
+    method_name = method_config['name']
+ 
     for batch in test_dataloader:
         data, target = parse_batch(batch, device=device)
 
         with torch.no_grad():
-            if config['METHOD']['name'] == 'LargeLossMatters':
+            if method_name in ['LargeLossMatters', 'BoostCAM']:
                 loss, _ = model.loss(data, target)
             else:
                 loss = model.loss(data, target)
@@ -94,12 +102,13 @@ def update_epoch(model, config):
     """
 
     model_config = config['METHOD']
+    method_name = model_config['name']
 
-    if model_config['name'] == 'LargeLossMatters':
+    if method_name in ['LargeLossMatters', 'BoostCAM']:
         model.decrease_clean_rate()
 
 
-def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=False, masking=False):
+def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=False, masking=False, prefix=''):
     """
     Evaluate result of model (mAP, AP etc.)
     Evaluation without masking
@@ -109,6 +118,9 @@ def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=
     data_size = len(test_dataloader.dataset)
     num_classes = test_dataloader.dataset.num_classes
 
+    method_config = config['METHOD']
+    method_name = method_config['name']
+
     pred, gt = np.zeros((data_size, num_classes)), np.zeros((data_size, num_classes))
     start_idx = 0
     for batch in test_dataloader:
@@ -117,7 +129,7 @@ def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=
 
         with torch.no_grad():
             logits = model.forward(data)
-            if config['METHOD']['name'] == 'LargeLossMatters':
+            if method_name in ['LargeLossMatters', 'BoostCAM']:
                 if logits.dim() == 1:
                     logits = logits.unsqueeze(0)
                 preds = torch.sigmoid(logits)
@@ -131,7 +143,6 @@ def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=
     mA = criteria.mean_accuracy(pred, gt)
     acc, prec, recall, f1 = criteria.example_based(pred, gt)
 
-    prefix = ''
     if masking:
         prefix = 'masked_'
     else:

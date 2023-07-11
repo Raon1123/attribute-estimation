@@ -55,9 +55,12 @@ def main(config):
             model, train_dataloader, epoch, config, device, masking=True)
         metrics = epochs.evaluate_result(
             model, train_dataloader, epoch, config, device, masking=False)
+        tst_metrics = epochs.evaluate_result(
+            model, test_dataloader, epoch, config, device, masking=False, prefix='test_')
         
         logging.log_metrics(writer, metrics, epoch, config)
         logging.log_metrics(writer, msk_metrics, epoch, config)
+        logging.log_metrics(writer, tst_metrics, epoch, config)
 
     metrics = epochs.evaluate_result(
         model, test_dataloader, epoch, config, device, 

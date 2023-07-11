@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 
-from models.largeloss import LargeLossMatters
+from models.largeloss import LargeLossMatters, BoostCAM
 
 import utils.logging as logging
 
@@ -20,8 +20,9 @@ def get_model(config, num_classes, use_feature=False):
         return model
 
     model_config = config['METHOD']
+    model_name = model_config['name']
 
-    if model_config['name'] == 'LargeLossMatters':
+    if model_name == 'LargeLossMatters':
         try:
             model = LargeLossMatters(
                 num_classes=num_classes,
@@ -33,6 +34,17 @@ def get_model(config, num_classes, use_feature=False):
             )
         except KeyError:
             raise KeyError("Please check your config file, requirements backbone, freeze_backbone, mod_schemes and delta_rel")
+    elif model_name == 'BoostCAM':
+        try:
+            model = BoostCAM(
+                num_classes=num_classes,
+                backbone=model_config['backbone'],
+                freeze_backbone=model_config['freeze_backbone'],
+                use_feature=use_feature,
+                alpha=model_config['alpha'],
+            )
+        except:
+            raise KeyError("Please check your config file, requirements backbone, freeze_backbone, alpha")
     else:
         raise NotImplementedError
     
