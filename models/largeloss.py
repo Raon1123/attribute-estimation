@@ -130,7 +130,7 @@ class BoostCAM(nn.Module):
                  freeze_backbone=False,
                  use_feature=False,
                  mod_schemes='LL-R',
-                 alpha=0.1,
+                 alpha=5,
                  delta_rel=0.1):
       super().__init__()
 
