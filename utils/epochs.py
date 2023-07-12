@@ -145,7 +145,7 @@ def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=
 
     if masking:
         prefix = 'masked_'
-    else:
+    elif prefix == '':
         prefix = 'unmasked_'
 
     metrics = {prefix+'mA': mA, 
