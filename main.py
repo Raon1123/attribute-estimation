@@ -51,16 +51,13 @@ def main(config):
         logging.log_loss(writer, train_loss, epoch, 'train', config)
         logging.log_loss(writer, test_loss, epoch, 'test', config)
 
-        msk_metrics = epochs.evaluate_result(
+        train_metrics = epochs.evaluate_result(
             model, train_dataloader, epoch, config, device, masking=True)
-        metrics = epochs.evaluate_result(
-            model, train_dataloader, epoch, config, device, masking=False)
-        tst_metrics = epochs.evaluate_result(
+        test_metrics = epochs.evaluate_result(
             model, test_dataloader, epoch, config, device, masking=False, prefix='test_')
         
-        logging.log_metrics(writer, metrics, epoch, config)
-        logging.log_metrics(writer, msk_metrics, epoch, config)
-        logging.log_metrics(writer, tst_metrics, epoch, config)
+        logging.log_metrics(writer, train_metrics, epoch, config)
+        logging.log_metrics(writer, test_metrics, epoch, config)
 
     metrics = epochs.evaluate_result(
         model, test_dataloader, epoch, config, device, 

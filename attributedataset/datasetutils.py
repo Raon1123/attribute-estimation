@@ -67,10 +67,7 @@ def get_dataset(config):
         with open(pkl_path, 'rb') as f:
             proc_dict = pickle.load(f)
     except:
-        pkl_path = config['DATASET']['pkl_path']
-        use_feature = False
-        with open(pkl_path, 'rb') as f:
-            proc_dict = pickle.load(f)
+        raise FileNotFoundError("Please check your config file, requirements pkl_root and pkl_file")
 
     if not use_feature:
         img_root = proc_dict['img_root']

@@ -215,3 +215,10 @@ class BoostCAM(nn.Module):
 
   def decrease_clean_rate(self):
       self.clean_rate = self.clean_rate - self.delta_rel
+
+  def get_cam(self, x, boost=False):
+    backbone_logits = self.backbone(x)
+    CAM = self.onebyoneconv(backbone_logits)
+    if boost:
+      CAM = torch.where(CAM > 0, CAM * self.alpha, CAM)
+    return CAM
