@@ -142,11 +142,8 @@ def heatmap_on_image(img, heatmap, alpha=0.5):
   Output
   - img: np.array
   """
-  try:
-    img = TF.to_pil_image(img)
-  except:
-    print(img.shape)
-    raise NotImplementedError
+  
+  img = TF.to_pil_image(img)
   heatmap = TF.to_pil_image(heatmap)
 
   res = Image.blend(img, heatmap, alpha=alpha)

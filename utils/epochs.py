@@ -213,12 +213,16 @@ def evaluate_cam(model, dataloader,
 
             with torch.no_grad():
                 cam = model.get_cam(data)
+
+                img = data.cpu().numpy().squeeze(0)
                 cam = cam.cpu().numpy()
+                img = np.transpose(img, (1, 2, 0)).astype(np.uint8)
+                cam = (cam * 255).astype(np.uint8)
 
                 # add cam on img
                 for single_cam in cam:
-                    single_cam = single_cam.squeeze(0)
-                    single_cam = logging.heatmap_on_image(data.cpu().numpy(), single_cam, alpha=0.5)
+                    print(single_cam.shape)
+                    single_cam = logging.heatmap_on_image(img, single_cam, alpha=0.5)
                     cams.append(single_cam)
 
             cnt_cams += cam.size(0)

@@ -220,7 +220,10 @@ class BoostCAM(nn.Module):
     if boost:
       CAM = torch.where(CAM > 0, CAM * self.alpha, CAM)
 
+    # normalize CAM
+    CAM = (CAM - CAM.min()) / (CAM.max() - CAM.min() + 1e-8)
+
     # resize CAM to the same size as the input image
     CAM = F.interpolate(CAM, size=(x.shape[2], x.shape[3]), mode='bilinear', align_corners=False)
-    
+
     return CAM
