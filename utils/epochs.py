@@ -107,15 +107,11 @@ def update_epoch(model, config):
         model.decrease_clean_rate()
 
 
-def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=False, masking=False, prefix=''):
-    """
-    Evaluate result of model (mAP, AP etc.)
-    Evaluation without masking
-    """
+def _evaluate_data(model, dataloader, config, device='cpu', masking=False):
     model.eval()
 
-    data_size = len(test_dataloader.dataset)
-    num_classes = test_dataloader.dataset.num_classes
+    data_size = len(dataloader.dataset)
+    num_classes = dataloader.dataset.num_classes
 
     method_config = config['METHOD']
     method_name = method_config['name']
@@ -123,9 +119,9 @@ def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=
     pred = np.zeros((data_size, num_classes))
     masked_targets = np.zeros((data_size, num_classes))
     targets = np.zeros((data_size, num_classes))
-    
+
     start_idx = 0
-    for batch in test_dataloader:
+    for batch in dataloader:
         data, target = parse_batch(batch, masking=False, device='cpu')
         if masking:
             _, masked_target = parse_batch(batch, masking=masking, device='cpu')
@@ -145,6 +141,22 @@ def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=
                 masked_targets[start_idx:start_idx+batch_sz] = masked_target.numpy()
 
             start_idx += batch_sz
+
+    return pred, masked_targets, targets
+
+
+def evaluate_result(model, 
+                    dataloader, 
+                    epoch, 
+                    config, 
+                    device='cpu', 
+                    saving=False, 
+                    masking=False, 
+                    prefix=''):
+    """
+    Evaluate result of model (mAP, AP etc.)
+    """
+    pred, masked_targets, targets = _evaluate_data(model, dataloader, config, device, masking)
 
     # calculate metrics
     ## unmasked
@@ -175,3 +187,42 @@ def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=
         
     return metrics
 
+
+def evaluate_cam(model, dataloader,
+                 num_imgs, 
+                 device='cpu'):
+    """
+    Evaluate CAM of model.
+    Input
+    - model: model to be evaluated
+    - dataloader: dataloader for evaluation
+
+    Output
+    - cams: CAMs of model (N, C, H, W)
+    """
+    model.eval()
+    
+    cams = []
+
+    cnt_cams = 0
+    for batch in dataloader:
+        datas, target = parse_batch(batch, device='cpu')
+        num_class = target.size(1)
+        for data in datas:
+            data = data.unsqueeze(0).to(device)
+
+            with torch.no_grad():
+                cam = model.get_cam(data)
+                cam = cam.cpu().numpy()
+
+                # add cam on img
+                for single_cam in cam:
+                    single_cam = single_cam.squeeze(0)
+                    single_cam = logging.heatmap_on_image(data.cpu().numpy(), single_cam, alpha=0.5)
+                    cams.append(single_cam)
+
+            cnt_cams += cam.size(0)
+            if cnt_cams >= num_imgs:
+                break
+
+    return np.concatenate(cams, axis=0)

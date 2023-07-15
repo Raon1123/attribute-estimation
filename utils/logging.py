@@ -1,8 +1,13 @@
 import os
 import pickle
+import math
 
+from PIL import Image
 import numpy as np
 import torch
+from torchvision.utils import make_grid
+import torchvision.transforms.functional as TF
+
 from torch.utils.tensorboard import SummaryWriter
 try:
   import wandb
@@ -127,11 +132,55 @@ def write_metrics(gt, preds, metrics, epoch, config):
     pickle.dump(metrics, f)
 
 
-def log_image(writer, image, epoch, mode, config=None):
-  if writer == 'wandb':
-    wandb.log({f'{mode}_image': [wandb.Image(image)]}, step=epoch)
-  else:
-    try:
-      writer.add_image(f'{mode}_image', image, epoch)
-    except:
-      raise NotImplementedError
+def heatmap_on_image(img, heatmap, alpha=0.5):
+  """
+  heatmap on image
+  Input
+  - img: np.array
+  - heatmap: np.array
+  - alpha: float
+  Output
+  - img: np.array
+  """
+  try:
+    img = TF.to_pil_image(img)
+  except:
+    print(img.shape)
+    raise NotImplementedError
+  heatmap = TF.to_pil_image(heatmap)
+
+  res = Image.blend(img, heatmap, alpha=alpha)
+
+  img = TF.to_tensor(res)
+
+  return img
+
+
+def log_image(writer, images, epoch, mode, config=None):
+  """
+  logging images
+  Input
+  - writer: tensorboard or wandb
+  - images: np.array
+  - epoch: int
+  """
+  for sample in images:
+    # sample: num_classes, H, W
+    # make grid
+    grid = make_grid(sample.unsqueeze(1), nrow=int(math.sqrt(sample.shape[0])))
+
+    if writer == 'wandb':
+      wandb.log({f'{mode}_image': [wandb.Image(grid)]}, step=epoch)
+    else:
+      try:
+        writer.add_image(f'{mode}_image', grid, epoch)
+      except:
+        raise NotImplementedError
+    
+
+def print_metrics(metrics, prefix=''):
+  print(prefix+'Metrics')
+  for k, v in metrics.items():
+    print(f'{prefix}{k}: {v:.4f}')
+  print()
+  

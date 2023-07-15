@@ -197,9 +197,6 @@ class BoostCAM(nn.Module):
     try:
       topk = torch.topk(unobserved_loss.flatten(), k)
     except:
-      print(batch_size)
-      print(num_classes)
-      print(k)
       raise NotImplementedError('topk error')
     
     topk_lossval = topk.values[-1]
@@ -219,6 +216,11 @@ class BoostCAM(nn.Module):
   def get_cam(self, x, boost=False):
     backbone_logits = self.backbone(x)
     CAM = self.onebyoneconv(backbone_logits)
+
     if boost:
       CAM = torch.where(CAM > 0, CAM * self.alpha, CAM)
+
+    # resize CAM to the same size as the input image
+    CAM = F.interpolate(CAM, size=(x.shape[2], x.shape[3]), mode='bilinear', align_corners=False)
+    
     return CAM
