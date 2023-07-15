@@ -79,6 +79,13 @@ def log_loss(writer, loss, epoch, mode, config=None):
   
 
 def log_metrics(writer, metrics, epoch, config=None):
+  """
+  logging metrics
+  Input
+  - writer: tensorboard or wandb
+  - metrics: dict
+  - epoch: int
+  """
   # metrics value mean
   for k, v in metrics.items():
     metrics[k] = v.mean()
@@ -94,6 +101,13 @@ def log_metrics(writer, metrics, epoch, config=None):
     
 
 def write_metrics(gt, preds, metrics, epoch, config):
+  """
+  write metrics, gt, preds
+  Input
+  - gt: np.array
+  - preds: np.array
+  - metrics: dict
+  """
   logging_config = config['LOGGING']
   log_str = exp_str(config)
   log_path = os.path.join(logging_config['log_dir'], log_str)
@@ -111,3 +125,13 @@ def write_metrics(gt, preds, metrics, epoch, config):
   metrics_path = os.path.join(log_path, f'metrics_{epoch}.pkl')
   with open(metrics_path, 'wb') as f:
     pickle.dump(metrics, f)
+
+
+def log_image(writer, image, epoch, mode, config=None):
+  if writer == 'wandb':
+    wandb.log({f'{mode}_image': [wandb.Image(image)]}, step=epoch)
+  else:
+    try:
+      writer.add_image(f'{mode}_image', image, epoch)
+    except:
+      raise NotImplementedError

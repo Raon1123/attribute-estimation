@@ -47,7 +47,6 @@ def train_epoch(model, train_dataloader, optimizer, config, device='cpu'):
 
     for batch in train_dataloader:
         data, target = parse_batch(batch, device=device)
-        _, un_msk = parse_batch(batch, masking=False, device=device)
 
         optimizer.zero_grad()
         if method_name in ['LargeLossMatters', 'BoostCAM']:
@@ -121,10 +120,15 @@ def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=
     method_config = config['METHOD']
     method_name = method_config['name']
 
-    pred, gt = np.zeros((data_size, num_classes)), np.zeros((data_size, num_classes))
+    pred = np.zeros((data_size, num_classes))
+    masked_targets = np.zeros((data_size, num_classes))
+    targets = np.zeros((data_size, num_classes))
+    
     start_idx = 0
     for batch in test_dataloader:
-        data, target = parse_batch(batch, masking=masking, device='cpu')
+        data, target = parse_batch(batch, masking=False, device='cpu')
+        if masking:
+            _, masked_target = parse_batch(batch, masking=masking, device='cpu')
         data = data.to(device)
 
         with torch.no_grad():
@@ -136,28 +140,38 @@ def evaluate_result(model, test_dataloader, epoch, config, device='cpu', saving=
 
             batch_sz = logits.size(0)
             pred[start_idx:start_idx+batch_sz] = preds.cpu().numpy()
-            gt[start_idx:start_idx+batch_sz] = target.numpy()
+            targets[start_idx:start_idx+batch_sz] = target.numpy()
+            if masking:
+                masked_targets[start_idx:start_idx+batch_sz] = masked_target.numpy()
 
             start_idx += batch_sz
 
-    mA = criteria.mean_accuracy(pred, gt)
-    acc, prec, recall, f1 = criteria.example_based(pred, gt)
+    # calculate metrics
+    ## unmasked
+    unmasked_mA = criteria.mean_accuracy(pred, targets)
+    unmasked_acc, unmasked_prec, unmasked_recall, unmasked_f1 = criteria.example_based(pred, targets)
+    metrics = {
+        prefix+'unmasked_mA': unmasked_mA,
+        prefix+'unmasked_acc': unmasked_acc,
+        prefix+'unmasked_prec': unmasked_prec,
+        prefix+'unmasked_recall': unmasked_recall,
+        prefix+'unmasked_f1': unmasked_f1,
+    }
 
+    ## masked
     if masking:
-        prefix = 'masked_'
-    elif prefix == '':
-        prefix = 'unmasked_'
-
-    metrics = {prefix+'mA': mA, 
-               prefix+'acc': acc, 
-               prefix+'prec': prec, 
-               prefix+'recall': recall, 
-               prefix+'f1': f1}
-
+        masked_mA = criteria.mean_accuracy(pred, masked_targets)
+        masked_acc, masked_prec, masked_recall, masked_f1 = criteria.example_based(pred, masked_targets)
+        metrics.update({
+            prefix+'masked_mA': masked_mA,
+            prefix+'masked_acc': masked_acc,
+            prefix+'masked_prec': masked_prec,
+            prefix+'masked_recall': masked_recall,
+            prefix+'masked_f1': masked_f1,
+        })
+    
     if saving:
-        logging.write_metrics(gt, pred, metrics, epoch, config)
-
-        print("Experiment Result")
-        print(f"mA: {mA.mean():.4f}, acc: {acc.mean():.4f}, prec: {prec.mean():.4f}, recall: {recall.mean():.4f}, f1: {f1.mean():.4f}")
+        logging.write_metrics(targets, pred, metrics, epoch, config)
         
     return metrics
+
