@@ -215,18 +215,19 @@ def evaluate_cam(model, dataloader,
                 cam = model.get_cam(data)
 
                 img = data.cpu().numpy().squeeze(0)
-                cam = cam.cpu().numpy()
+                cam = cam.cpu().numpy().squeeze(0)
                 img = np.transpose(img, (1, 2, 0)).astype(np.uint8)
-                cam = (cam * 255).astype(np.uint8)
+                cam = (cam * 255).astype(np.uint8) 
 
                 # add cam on img
                 for single_cam in cam:
-                    print(single_cam.shape)
                     single_cam = logging.heatmap_on_image(img, single_cam, alpha=0.5)
                     cams.append(single_cam)
 
-            cnt_cams += cam.size(0)
+            cnt_cams += data.shape[0]
             if cnt_cams >= num_imgs:
                 break
 
-    return np.concatenate(cams, axis=0)
+    # return as pytorch tensor
+    ret = np.concatenate(cams, axis=0)
+    return torch.from_numpy(ret)

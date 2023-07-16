@@ -2,7 +2,7 @@ import os
 import pickle
 import math
 
-from PIL import Image
+import cv2
 import numpy as np
 import torch
 from torchvision.utils import make_grid
@@ -143,13 +143,14 @@ def heatmap_on_image(img, heatmap, alpha=0.5):
   - img: np.array
   """
   
-  img = TF.to_pil_image(img)
-  heatmap = TF.to_pil_image(heatmap)
+  # heatmap: H, W
+  heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+  heatmap = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB)
 
-  res = Image.blend(img, heatmap, alpha=alpha)
+  img = cv2.addWeighted(img, alpha, heatmap, 1-alpha, 0)
 
-  img = TF.to_tensor(res)
-
+  # img to pytorch tensor
+  img = TF.to_tensor(img)
   return img
 
 
@@ -162,9 +163,9 @@ def log_image(writer, images, epoch, mode, config=None):
   - epoch: int
   """
   for sample in images:
-    # sample: num_classes, H, W
+    # sample: num_classes, C, H, W
     # make grid
-    grid = make_grid(sample.unsqueeze(1), nrow=int(math.sqrt(sample.shape[0])))
+    grid = make_grid(sample, nrow=int(math.sqrt(sample.shape[0])))
 
     if writer == 'wandb':
       wandb.log({f'{mode}_image': [wandb.Image(grid)]}, step=epoch)
@@ -178,6 +179,6 @@ def log_image(writer, images, epoch, mode, config=None):
 def print_metrics(metrics, prefix=''):
   print(prefix+'Metrics')
   for k, v in metrics.items():
-    print(f'{prefix}{k}: {v:.4f}')
+    print(f'{prefix}{k}: {v.mean():.4f}')
   print()
   
