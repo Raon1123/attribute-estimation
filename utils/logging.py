@@ -162,6 +162,14 @@ def log_image(writer, images, epoch, mode, config=None):
   - images: np.array
   - epoch: int
   """
+  # save image torch
+  save_dir = config['LOGGING']['log_dir']
+  save_dir = os.path.join(save_dir, exp_str(config))
+  save_file = f'{mode}_image_{epoch}.pth'
+  save_path = os.path.join(save_dir, save_file)
+
+  torch.save(images, save_path)
+
   for sample in images:
     # sample: num_classes, C, H, W
     # make grid
