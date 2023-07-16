@@ -25,6 +25,13 @@ def main(config):
     except:
         use_feature = False
 
+    try:
+        log_interval = config['LOGGING']['log_interval']
+        save_imgs = config['LOGGING']['save_imgs']
+    except:
+        log_interval = 1
+        save_imgs = 1
+
     train_dataloader, test_dataloader, num_classes = get_dataloader(config)
     model = modelutils.get_model(config, num_classes, use_feature=use_feature).to(device)
     writer = logging.logger_init(config)
@@ -46,22 +53,37 @@ def main(config):
 
         epochs.update_epoch(model, config)
 
+        # logging loss
         pbar.set_description(
             f"Epoch {epoch+1} | Train Loss: {train_loss:.5f} | Test Loss: {test_loss:.5f}")
         logging.log_loss(writer, train_loss, epoch, 'train', config)
         logging.log_loss(writer, test_loss, epoch, 'test', config)
 
-        msk_metrics = epochs.evaluate_result(
+        # logging metrics
+        train_metrics = epochs.evaluate_result(
             model, train_dataloader, epoch, config, device, masking=True)
-        metrics = epochs.evaluate_result(
-            model, train_dataloader, epoch, config, device, masking=False)
+        test_metrics = epochs.evaluate_result(
+            model, test_dataloader, epoch, config, device, masking=False, prefix='test_')
         
-        logging.log_metrics(writer, metrics, epoch, config)
-        logging.log_metrics(writer, msk_metrics, epoch, config)
+        logging.log_metrics(writer, train_metrics, epoch, config)
+        logging.log_metrics(writer, test_metrics, epoch, config)
+
+        # logging cams
+        if epoch % log_interval == 0:
+            # train cams
+            cams = epochs.evaluate_cam(model, train_dataloader, num_imgs=save_imgs, device=device)
+            cams = cams[:save_imgs] # (save_imgs, num_classes, H, W)
+            logging.log_image(writer, cams, epoch, mode='train')
+
+            # test cams
+            cams = epochs.evaluate_cam(model, test_dataloader, num_imgs=save_imgs, device=device)
+            cams = cams[:save_imgs]
+            logging.log_image(writer, cams, epoch, mode='test')
 
     metrics = epochs.evaluate_result(
         model, test_dataloader, epoch, config, device, 
         saving=True, masking=True)
+    logging.print_metrics(metrics)
     logging.save_model(model, config)
     
 
