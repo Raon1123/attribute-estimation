@@ -73,12 +73,12 @@ def main(config):
             # train cams
             cams = epochs.evaluate_cam(model, train_dataloader, num_imgs=save_imgs, device=device)
             cams = cams[:save_imgs] # (save_imgs, num_classes, H, W)
-            logging.log_image(writer, cams, epoch, mode='train')
+            logging.log_image(writer, cams, epoch, mode='train', config=config)
 
             # test cams
             cams = epochs.evaluate_cam(model, test_dataloader, num_imgs=save_imgs, device=device)
             cams = cams[:save_imgs]
-            logging.log_image(writer, cams, epoch, mode='test')
+            logging.log_image(writer, cams, epoch, mode='test', config=config)
 
     metrics = epochs.evaluate_result(
         model, test_dataloader, epoch, config, device, 
