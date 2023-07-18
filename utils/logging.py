@@ -69,7 +69,7 @@ def load_model(model, config):
 
 def logger_init(config):
   logging_config = config['LOGGING']
-  log_str = exp_str(config)
+  log_path = get_logger_path(config, subdir=exp_str(config))
 
   if wandb is not None and logging_config['logger'] == 'wandb':
     project = logging_config['project'] + '_' + config['DATASET']['name']
@@ -81,14 +81,13 @@ def logger_init(config):
     wandb.watch_called = False
     logger = 'wandb'
   elif logging_config['logger'] == 'tensorboard':
-    log_path = os.path.join(logging_config['log_dir'], log_str)
     logger = SummaryWriter(log_path)
   else:
     raise NotImplementedError
   
   # config pickling
-  pkl_file = f'{log_str}_config.pkl'
-  pkl_path = os.path.join(logging_config['log_dir'], pkl_file)
+  pkl_file = 'config.pkl'
+  pkl_path = os.path.join(log_path, pkl_file)
   with open(pkl_path, 'wb') as f:
     pickle.dump(config, f)
   
@@ -226,6 +225,7 @@ def log_cams(logger, imgs, cams, epoch, mode, config=None):
   """
   Logging the cams
   """
+  grid_cam_imgs = []
 
   for idx, (img, cam) in enumerate(zip(imgs, cams)):
     applied_imgs = []
@@ -234,6 +234,7 @@ def log_cams(logger, imgs, cams, epoch, mode, config=None):
 
       # make grid
     img_grid = make_grid(applied_imgs, nrow=int(math.sqrt(imgs.shape[0])))
+    grid_cam_imgs.append(img_grid)
 
     img_name = f'{mode}{idx}_image'
     if logger == 'wandb':
@@ -249,4 +250,6 @@ def log_cams(logger, imgs, cams, epoch, mode, config=None):
     log_dir = get_logger_path(config, subdir=exp_str(config))
     img_file = f'{mode}img_{epoch}.png'
     img_path = os.path.join(log_dir, img_file)
-    plt.savefig(grids, img_path)
+    for grid_cam in grid_cam_imgs:
+      grids = grid_cam.permute(1, 2, 0).cpu().numpy()
+      plt.savefig(grids, img_path)
