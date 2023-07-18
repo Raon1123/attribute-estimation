@@ -18,7 +18,7 @@ except ImportError:
 
 def exp_str(config):
   logging_config = config['LOGGING']
-  log_str = [logging_config['project'], logging_config['postfix']]
+  log_str = [logging_config['project'], config['DATASET']['name'], logging_config['postfix']]
   log_str = '_'.join(log_str)
   
   return log_str
@@ -69,25 +69,25 @@ def load_model(model, config):
 
 def logger_init(config):
   logging_config = config['LOGGING']
-  log_path = get_logger_path(config, subdir=exp_str(config))
+  experiment = exp_str(config)
+  log_dir = get_logger_path(config, subdir=experiment)
 
   if wandb is not None and logging_config['logger'] == 'wandb':
-    project = logging_config['project'] + '_' + config['DATASET']['name']
     wandb.init(
-        project=project,
+        project=experiment,
         name=logging_config['postfix'],
         config=config
     )
     wandb.watch_called = False
     logger = 'wandb'
   elif logging_config['logger'] == 'tensorboard':
-    logger = SummaryWriter(log_path)
+    logger = SummaryWriter(log_dir)
   else:
     raise NotImplementedError
   
   # config pickling
   pkl_file = 'config.pkl'
-  pkl_path = os.path.join(log_path, pkl_file)
+  pkl_path = os.path.join(log_dir, pkl_file)
   with open(pkl_path, 'wb') as f:
     pickle.dump(config, f)
   
