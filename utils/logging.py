@@ -237,7 +237,7 @@ def log_cams(logger, imgs, cams, epoch, mode, config=None):
     img_grid = make_grid(applied_imgs, nrow=int(math.sqrt(num_class)))
     grid_cam_imgs.append(img_grid)
 
-    img_name = f'{mode}{idx}_image'
+    img_name = f'{mode}{idx}_{epoch}_image'
     if logger == 'wandb':
       wandb.log({img_name: [wandb.Image(img_grid)]}, step=epoch)
     else:
