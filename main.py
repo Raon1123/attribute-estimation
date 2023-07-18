@@ -84,7 +84,6 @@ def main(config):
             logging.write_cams(config, imgs, cams, epoch, mode='test')
             logging.log_cams(logger, imgs, cams, epoch, mode='test', config=config)
 
-            exit(0)
 
     metrics = epochs.evaluate_result(
         model, test_dataloader, epoch, config, device, 

@@ -227,23 +227,26 @@ def log_cams(logger, imgs, cams, epoch, mode, config=None):
   Logging the cams
   """
   grid_imgs = []
-  for img, cam in zip(imgs, cams):
-    grid_imgs.append(heatmap_on_image(img, cam, 0.7))
+  for idx, (img, cam) in enumerate(zip(imgs, cams)):
+    applied_imgs = []
+    for attribute_cam in cam:
+      applied_imgs.append(heatmap_on_image(img, attribute_cam, 0.7))
 
-  # make grid
-  grids = make_grid(grid_imgs, nrow=int(math.sqrt(imgs.shape[0])))
+      # make grid
+      img_grid = make_grid(grid_imgs, nrow=int(math.sqrt(imgs.shape[0])))
 
-  if logger == 'wandb':
-    wandb.log({f'{mode}_image': [wandb.Image(grids)]}, step=epoch)
-  else:
-    try:
-      logger.add_image(f'{mode}_image', grids, epoch)
-    except:
-      raise NotImplementedError
+    img_name = f'{mode}{idx}_image'
+    if logger == 'wandb':
+      wandb.log({img_name: [wandb.Image(img_grid)]}, step=epoch)
+    else:
+      try:
+        logger.add_image(img_name, img_grid, epoch)
+      except:
+        raise NotImplementedError
     
   # write image
   if config is not None:
     log_dir = get_logger_path(config, subdir=exp_str(config))
     img_file = f'{mode}img_{epoch}.png'
     img_path = os.path.join(log_dir, img_file)
-    save_image(grids, img_path)
+    plt.savefig(grids, img_path)
