@@ -8,7 +8,9 @@ import torch
 from torchvision.utils import make_grid
 import torchvision.transforms.functional as TF
 
-from torch.utils.tensorboard import Summarylogger
+from matplotlib import pyplot as plt
+
+from torch.utils.tensorboard import SummaryWriter
 try:
   import wandb
 except ImportError:
@@ -80,7 +82,7 @@ def logger_init(config):
     logger = 'wandb'
   elif logging_config['logger'] == 'tensorboard':
     log_path = os.path.join(logging_config['log_dir'], log_str)
-    logger = Summarylogger(log_path)
+    logger = SummaryWriter(log_path)
   else:
     raise NotImplementedError
   
@@ -133,13 +135,7 @@ def write_metrics(gt, preds, metrics, epoch, config):
   - preds: np.array
   - metrics: dict
   """
-  logging_config = config['LOGGING']
-  log_str = exp_str(config)
-  log_path = os.path.join(logging_config['log_dir'], log_str)
-
-  # make directory
-  if not os.path.exists(log_path):
-    os.makedirs(log_path)
+  log_path = get_logger_path(config, subdir=exp_str(config))
 
   gt_path = os.path.join(log_path, f'gt_{epoch}.pth')
   preds_path = os.path.join(log_path, f'preds_{epoch}.pth')
@@ -160,18 +156,18 @@ def heatmap_on_image(img, heatmap, alpha=0.5):
   - heatmap: torch.tensor
   - alpha: float
   Output
-  - img: np.array
+  - ret: np.array
   """
-  
-  # heatmap: H, W
-  heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
-  heatmap = cv2.cvtColor(heatmap, cv2.COLOR_BGR2RGB)
+  # img to np.array
+  img = img.numpy().transpose(1, 2, 0).astype(np.uint8)
+  heatmap = heatmap.numpy().astype(np.uint8)
 
-  img = cv2.addWeighted(img, alpha, heatmap, 1-alpha, 0)
+  heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+  ret = cv2.addWeighted(heatmap, alpha, img, 1-alpha, 0)
 
   # img to pytorch tensor
-  img = TF.to_tensor(img)
-  return img
+  ret = TF.to_tensor(ret)
+  return ret
 
 
 def log_image(logger, images, epoch, mode, config=None):
@@ -210,14 +206,44 @@ def print_metrics(metrics, prefix=''):
   print()
 
 
-def write_cams():
+def write_cams(config, imgs, cams, epoch, mode):
   """ 
   Write the file of cams
   """
-  pass
+  log_dir = get_logger_path(config, subdir=exp_str(config))
+
+  img_file = f'{mode}img_{epoch}.pth'
+  cam_file = f'{mode}cam_{epoch}.pth'
+
+  img_path = os.path.join(log_dir, img_file)
+  cam_path = os.path.join(log_dir, cam_file)
+
+  torch.save(imgs, img_path)
+  torch.save(cams, cam_path)
 
 
-def log_cams():
+def log_cams(logger, imgs, cams, epoch, mode, config=None):
   """
   Logging the cams
   """
+  grid_imgs = []
+  for img, cam in zip(imgs, cams):
+    grid_imgs.append(heatmap_on_image(img, cam, 0.7))
+
+  # make grid
+  grids = make_grid(grid_imgs, nrow=int(math.sqrt(imgs.shape[0])))
+
+  if logger == 'wandb':
+    wandb.log({f'{mode}_image': [wandb.Image(grids)]}, step=epoch)
+  else:
+    try:
+      logger.add_image(f'{mode}_image', grids, epoch)
+    except:
+      raise NotImplementedError
+    
+  # write image
+  if config is not None:
+    log_dir = get_logger_path(config, subdir=exp_str(config))
+    img_file = f'{mode}img_{epoch}.png'
+    img_path = os.path.join(log_dir, img_file)
+    save_image(grids, img_path)

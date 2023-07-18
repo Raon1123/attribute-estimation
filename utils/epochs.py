@@ -209,6 +209,7 @@ def evaluate_cam(model, dataloader,
     cnt_cams = 0
     for batch in dataloader:
         datas, target = parse_batch(batch, device='cpu')
+        datas = datas.to(device)
 
         with torch.no_grad():
             batch_cam = model.get_cam(datas)
@@ -221,5 +222,9 @@ def evaluate_cam(model, dataloader,
         if cnt_cams >= num_imgs:
             break
 
+    imgs = torch.cat(imgs, dim=0)
+    cams = torch.cat(cams, dim=0)
+    cams = cams * 255.0
+
     # return as pytorch tensor
-    return torch.cat(imgs, dim=0), torch.cat(cams, dim=0)
+    return imgs, cams
