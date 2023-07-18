@@ -72,13 +72,18 @@ def main(config):
         if epoch % log_interval == 0:
             # train cams
             imgs, cams = epochs.evaluate_cam(model, train_dataloader, num_imgs=save_imgs, device=device)
-            imgs, cams = cams[:save_imgs] # (save_imgs, num_classes, H, W)
-            logging.log_image(logger, cams, epoch, mode='train', config=config)
+            imgs, cams = imgs[:save_imgs], cams[:save_imgs] # (save_imgs, num_classes, H, W)
+            #logging.log_image(logger, cams, epoch, mode='train', config=config)
+            logging.write_cams(config, imgs, cams, epoch, mode='train')
+            logging.log_cams(logger, imgs, cams, epoch, mode='train', config=config)
 
             # test cams
             imgs, cams = epochs.evaluate_cam(model, test_dataloader, num_imgs=save_imgs, device=device)
-            imgs, cams = cams[:save_imgs]
-            logging.log_image(logger, cams, epoch, mode='test', config=config)
+            imgs, cams = imgs[:save_imgs], cams[:save_imgs]
+            #logging.log_image(logger, cams, epoch, mode='test', config=config)
+            logging.write_cams(config, imgs, cams, epoch, mode='test')
+            logging.log_cams(logger, imgs, cams, epoch, mode='test', config=config)
+
 
     metrics = epochs.evaluate_result(
         model, test_dataloader, epoch, config, device, 
