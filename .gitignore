@@ -1,15 +1,22 @@
+# config and scripts
+scripts/*
+*.sh
+
+config.yml
+configs/*
+
+# logs
+wandb/*
 logs/*
 save/*
 *.pkl
+*.pth
+*.tar
 *.txt
 *.err
 *.out
-*.sh
-config.yml
-configs/*
-wandb/*
 
-scripts/*
+
 preprocessing/visual_preprocess.py
 
 # Byte-compiled / optimized / DLL files
@@ -143,3 +150,4 @@ dmypy.json
 .pyre/
 
 live.ipynb
+
