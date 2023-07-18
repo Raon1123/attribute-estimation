@@ -22,23 +22,43 @@ def exp_str(config):
   return log_str
 
 
-def save_model(model, config):
+def get_model_path(config):
   logging_config = config['LOGGING']
-  log_str = exp_str(config)
+  model_path = logging_config['model_path']
 
-  save_dir = logging_config['model_path']
-  if not os.path.exists(save_dir):
-    os.makedirs(save_dir)
+  if not os.path.exists(model_path):
+    os.makedirs(model_path)
 
-  model_path = os.path.join(save_dir, log_str)
+  return model_path
+
+
+def get_logger_path(config, subdir=''):
+  logging_config = config['LOGGING']
+  logger_path = logging_config['log_dir']
+
+  if not os.path.exists(logger_path):
+    os.makedirs(logger_path)
+
+  if subdir != '':
+    logger_path = os.path.join(logger_path, subdir)
+    if not os.path.exists(logger_path):
+      os.makedirs(logger_path)
+
+  return logger_path
+
+
+def save_model(model, config):
+  model_path = get_model_path(config)
+  model_file = exp_str(config) + '.pth'
+  model_path = os.path.join(model_path, model_file)
 
   torch.save(model.state_dict(), model_path)
 
 
 def load_model(model, config):
-  logging_config = config['LOGGING']
-  log_str = exp_str(config)
-  model_path = os.path.join(logging_config['model_path'], log_str)
+  model_path = get_model_path(config)
+  model_file = exp_str(config) + '.pth'
+  model_path = os.path.join(model_path, model_file)
 
   model.load_state_dict(torch.load(model_path))
 
@@ -163,13 +183,9 @@ def log_image(logger, images, epoch, mode, config=None):
   - epoch: int
   """
   # save image torch
-  save_dir = config['LOGGING']['log_dir']
-  save_dir = os.path.join(save_dir, exp_str(config))
+  save_dir = get_logger_path(config, subdir=exp_str(config))
   save_file = f'{mode}_image_{epoch}.pth'
   save_path = os.path.join(save_dir, save_file)
-
-  if not os.path.exists(save_dir):
-    os.makedirs(save_dir)
 
   torch.save(images, save_path)
 
@@ -195,7 +211,7 @@ def print_metrics(metrics, prefix=''):
 
 
 def write_cams():
-  """
+  """ 
   Write the file of cams
   """
   pass

@@ -198,36 +198,28 @@ def evaluate_cam(model, dataloader,
     - dataloader: dataloader for evaluation
 
     Output
-    - cams: CAMs of model (N, C, H, W)
+    - imgs: images of input (N, C, H, W)
+    - cams: CAMs of model (N, num_class, H, W)
     """
     model.eval()
     
+    imgs = []
     cams = []
 
     cnt_cams = 0
     for batch in dataloader:
         datas, target = parse_batch(batch, device='cpu')
-        num_class = target.size(1)
-        for data in datas:
-            data = data.unsqueeze(0).to(device)
 
-            with torch.no_grad():
-                cam = model.get_cam(data)
+        with torch.no_grad():
+            batch_cam = model.get_cam(datas)
+        batch_cam = batch_cam.cpu() # (N, C, H, W)
 
-                img = data.cpu().numpy().squeeze(0)
-                cam = cam.cpu().numpy().squeeze(0)
-                img = np.transpose(img, (1, 2, 0)).astype(np.uint8)
-                cam = (cam * 255).astype(np.uint8) 
+        imgs.append(datas.cpu())
+        cams.append(batch_cam)
 
-                # add cam on img
-                for single_cam in cam:
-                    single_cam = logging.heatmap_on_image(img, single_cam, alpha=0.5)
-                    cams.append(single_cam)
-
-            cnt_cams += data.shape[0]
-            if cnt_cams >= num_imgs:
-                break
+        cnt_cams += datas.shape[0]
+        if cnt_cams >= num_imgs:
+            break
 
     # return as pytorch tensor
-    ret = np.concatenate(cams, axis=0)
-    return torch.from_numpy(ret)
+    return torch.cat(imgs, dim=0), torch.cat(cams, dim=0)
