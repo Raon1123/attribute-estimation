@@ -168,6 +168,9 @@ def log_image(writer, images, epoch, mode, config=None):
   save_file = f'{mode}_image_{epoch}.pth'
   save_path = os.path.join(save_dir, save_file)
 
+  if not os.path.exists(save_dir):
+    os.makedirs(save_dir)
+
   torch.save(images, save_path)
 
   for sample in images:
