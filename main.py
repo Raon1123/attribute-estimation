@@ -34,7 +34,7 @@ def main(config):
 
     train_dataloader, test_dataloader, num_classes = get_dataloader(config)
     model = modelutils.get_model(config, num_classes, use_feature=use_feature).to(device)
-    writer = logging.logger_init(config)
+    logger = logging.logger_init(config)
 
     # define optimizer
     optimizer_config = config['OPTIMIZER']
@@ -56,8 +56,8 @@ def main(config):
         # logging loss
         pbar.set_description(
             f"Epoch {epoch+1} | Train Loss: {train_loss:.5f} | Test Loss: {test_loss:.5f}")
-        logging.log_loss(writer, train_loss, epoch, 'train', config)
-        logging.log_loss(writer, test_loss, epoch, 'test', config)
+        logging.log_loss(logger, train_loss, epoch, 'train', config)
+        logging.log_loss(logger, test_loss, epoch, 'test', config)
 
         # logging metrics
         train_metrics = epochs.evaluate_result(
@@ -65,20 +65,20 @@ def main(config):
         test_metrics = epochs.evaluate_result(
             model, test_dataloader, epoch, config, device, masking=False, prefix='test_')
         
-        logging.log_metrics(writer, train_metrics, epoch, config)
-        logging.log_metrics(writer, test_metrics, epoch, config)
+        logging.log_metrics(logger, train_metrics, epoch, config)
+        logging.log_metrics(logger, test_metrics, epoch, config)
 
         # logging cams
         if epoch % log_interval == 0:
             # train cams
             cams = epochs.evaluate_cam(model, train_dataloader, num_imgs=save_imgs, device=device)
             cams = cams[:save_imgs] # (save_imgs, num_classes, H, W)
-            logging.log_image(writer, cams, epoch, mode='train', config=config)
+            logging.log_image(logger, cams, epoch, mode='train', config=config)
 
             # test cams
             cams = epochs.evaluate_cam(model, test_dataloader, num_imgs=save_imgs, device=device)
             cams = cams[:save_imgs]
-            logging.log_image(writer, cams, epoch, mode='test', config=config)
+            logging.log_image(logger, cams, epoch, mode='test', config=config)
 
     metrics = epochs.evaluate_result(
         model, test_dataloader, epoch, config, device, 

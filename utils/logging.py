@@ -8,7 +8,7 @@ import torch
 from torchvision.utils import make_grid
 import torchvision.transforms.functional as TF
 
-from torch.utils.tensorboard import SummaryWriter
+from torch.utils.tensorboard import Summarylogger
 try:
   import wandb
 except ImportError:
@@ -57,10 +57,10 @@ def logger_init(config):
         config=config
     )
     wandb.watch_called = False
-    writer = 'wandb'
+    logger = 'wandb'
   elif logging_config['logger'] == 'tensorboard':
     log_path = os.path.join(logging_config['log_dir'], log_str)
-    writer = SummaryWriter(log_path)
+    logger = Summarylogger(log_path)
   else:
     raise NotImplementedError
   
@@ -70,24 +70,24 @@ def logger_init(config):
   with open(pkl_path, 'wb') as f:
     pickle.dump(config, f)
   
-  return writer
+  return logger
 
 
-def log_loss(writer, loss, epoch, mode, config=None):
-  if writer == 'wandb':
+def log_loss(logger, loss, epoch, mode, config=None):
+  if logger == 'wandb':
     wandb.log({f'{mode}_loss': loss}, step=epoch)
   else:
     try:
-      writer.add_scalar(f'{mode}_loss', loss, epoch)
+      logger.add_scalar(f'{mode}_loss', loss, epoch)
     except:
       raise NotImplementedError
   
 
-def log_metrics(writer, metrics, epoch, config=None):
+def log_metrics(logger, metrics, epoch, config=None):
   """
   logging metrics
   Input
-  - writer: tensorboard or wandb
+  - logger: tensorboard or wandb
   - metrics: dict
   - epoch: int
   """
@@ -95,12 +95,12 @@ def log_metrics(writer, metrics, epoch, config=None):
   for k, v in metrics.items():
     metrics[k] = v.mean()
 
-  if writer == 'wandb':
+  if logger == 'wandb':
     wandb.log(metrics, step=epoch)
   else:
     try:
       for k, v in metrics.items():
-        writer.add_scalar(k, v, epoch)
+        logger.add_scalar(k, v, epoch)
     except:
       raise NotImplementedError
     
@@ -134,10 +134,10 @@ def write_metrics(gt, preds, metrics, epoch, config):
 
 def heatmap_on_image(img, heatmap, alpha=0.5):
   """
-  heatmap on image
+  draw heatmap on image
   Input
-  - img: np.array
-  - heatmap: np.array
+  - img: torch.tensor
+  - heatmap: torch.tensor
   - alpha: float
   Output
   - img: np.array
@@ -154,11 +154,11 @@ def heatmap_on_image(img, heatmap, alpha=0.5):
   return img
 
 
-def log_image(writer, images, epoch, mode, config=None):
+def log_image(logger, images, epoch, mode, config=None):
   """
-  logging images
+  logging images, log pytorch tensor and save torch tensor
   Input
-  - writer: tensorboard or wandb
+  - logger: tensorboard or wandb
   - images: np.array
   - epoch: int
   """
@@ -178,11 +178,11 @@ def log_image(writer, images, epoch, mode, config=None):
     # make grid
     grid = make_grid(sample, nrow=int(math.sqrt(sample.shape[0])))
 
-    if writer == 'wandb':
+    if logger == 'wandb':
       wandb.log({f'{mode}_image': [wandb.Image(grid)]}, step=epoch)
     else:
       try:
-        writer.add_image(f'{mode}_image', grid, epoch)
+        logger.add_image(f'{mode}_image', grid, epoch)
       except:
         raise NotImplementedError
     
@@ -192,4 +192,16 @@ def print_metrics(metrics, prefix=''):
   for k, v in metrics.items():
     print(f'{prefix}{k}: {v.mean():.4f}')
   print()
-  
+
+
+def write_cams():
+  """
+  Write the file of cams
+  """
+  pass
+
+
+def log_cams():
+  """
+  Logging the cams
+  """
