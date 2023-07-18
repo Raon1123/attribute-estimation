@@ -75,14 +75,14 @@ def main(config):
             imgs, cams = imgs[:save_imgs], cams[:save_imgs] # (save_imgs, num_classes, H, W)
             #logging.log_image(logger, cams, epoch, mode='train', config=config)
             logging.write_cams(config, imgs, cams, epoch, mode='train')
-            logging.log_cams(logger, cams, epoch, mode='train', config=config)
+            logging.log_cams(logger, imgs, cams, epoch, mode='train', config=config)
 
             # test cams
             imgs, cams = epochs.evaluate_cam(model, test_dataloader, num_imgs=save_imgs, device=device)
             imgs, cams = imgs[:save_imgs], cams[:save_imgs]
             #logging.log_image(logger, cams, epoch, mode='test', config=config)
             logging.write_cams(config, imgs, cams, epoch, mode='test')
-            logging.log_cams(logger, cams, epoch, mode='test', config=config)
+            logging.log_cams(logger, imgs, cams, epoch, mode='test', config=config)
 
             exit(0)
 
