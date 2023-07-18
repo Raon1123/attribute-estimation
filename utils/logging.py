@@ -18,7 +18,9 @@ except ImportError:
 
 def exp_str(config):
   logging_config = config['LOGGING']
-  log_str = [logging_config['project'], config['DATASET']['name'], logging_config['postfix']]
+  log_str = [logging_config['project'], 
+             config['DATASET']['name'], 
+             logging_config['postfix']]
   log_str = '_'.join(log_str)
   
   return log_str

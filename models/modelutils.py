@@ -54,23 +54,34 @@ def get_model(config, num_classes, use_feature=False):
 def get_optimizer(model, config):
     optim_config = config['OPTIMIZER']
 
+    # load hyperparameter
+    lr = optim_config['lr']
+    try:
+        momentum = optim_config['momentum']
+    except KeyError:
+        momentum = 0.9
+    try:
+        weight_decay = optim_config['weight_decay']
+    except KeyError:
+        weight_decay = 0.0005
+    try:
+        nestrov = optim_config['nestrov']
+    except KeyError:
+        nestrov = False
+
     if optim_config['name'] == 'SGD':
-        try:
-            nestrov = optim_config['nestrov']
-        except KeyError:
-            nestrov = False
-        
         optimizer = optim.SGD(
             model.parameters(),
-            lr=optim_config['lr'],
-            momentum=optim_config['momentum'],
-            weight_decay=optim_config['weight_decay'],
+            lr=lr,
+            momentum=momentum,
+            weight_decay=weight_decay,
             nesterov=nestrov
         )
     elif optim_config['name'] == 'Adam':
         optimizer = optim.Adam(
             model.parameters(),
-            lr=optim_config['lr'],
+            lr=lr,
+            weight_decay=weight_decay
         )
 
     return optimizer
