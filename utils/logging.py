@@ -226,14 +226,14 @@ def log_cams(logger, imgs, cams, epoch, mode, config=None):
   """
   Logging the cams
   """
-  grid_imgs = []
+
   for idx, (img, cam) in enumerate(zip(imgs, cams)):
     applied_imgs = []
     for attribute_cam in cam:
       applied_imgs.append(heatmap_on_image(img, attribute_cam, 0.7))
 
       # make grid
-      img_grid = make_grid(grid_imgs, nrow=int(math.sqrt(imgs.shape[0])))
+    img_grid = make_grid(applied_imgs, nrow=int(math.sqrt(imgs.shape[0])))
 
     img_name = f'{mode}{idx}_image'
     if logger == 'wandb':
