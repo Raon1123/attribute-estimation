@@ -229,11 +229,12 @@ def log_cams(logger, imgs, cams, epoch, mode, config=None):
 
   for idx, (img, cam) in enumerate(zip(imgs, cams)):
     applied_imgs = []
+    num_class = cam.shape[0]
     for attribute_cam in cam:
       applied_imgs.append(heatmap_on_image(img, attribute_cam, 0.7))
 
       # make grid
-    img_grid = make_grid(applied_imgs, nrow=int(math.sqrt(imgs.shape[0])))
+    img_grid = make_grid(applied_imgs, nrow=int(math.sqrt(num_class)))
     grid_cam_imgs.append(img_grid)
 
     img_name = f'{mode}{idx}_image'
@@ -246,10 +247,12 @@ def log_cams(logger, imgs, cams, epoch, mode, config=None):
         raise NotImplementedError
     
   # write image
-  if config is not None:
-    log_dir = get_logger_path(config, subdir=exp_str(config))
-    img_file = f'{mode}img_{epoch}.png'
-    img_path = os.path.join(log_dir, img_file)
-    for grid_cam in grid_cam_imgs:
-      grids = grid_cam.permute(1, 2, 0).cpu().numpy()
-      plt.savefig(grids, img_path)
+    if config is not None:
+      log_dir = get_logger_path(config, subdir=exp_str(config))
+      img_file = f'{img_name}.png'
+      img_path = os.path.join(log_dir, img_file)
+
+      img_grid = img_grid.permute(1, 2, 0).numpy()
+
+      plt.imshow(img_grid)
+      plt.savefig(img_path)
