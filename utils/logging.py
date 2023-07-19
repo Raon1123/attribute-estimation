@@ -153,8 +153,8 @@ def heatmap_on_image(img, heatmap, alpha=0.5):
   """
   draw heatmap on image
   Input
-  - img: torch.tensor
-  - heatmap: torch.tensor
+  - img: torch.tensor (C, H, W)
+  - heatmap: torch.tensor (7, 7)
   - alpha: float
   Output
   - ret: np.array
@@ -169,35 +169,6 @@ def heatmap_on_image(img, heatmap, alpha=0.5):
   # img to pytorch tensor
   ret = TF.to_tensor(ret)
   return ret
-
-
-def log_image(logger, images, epoch, mode, config=None):
-  """
-  logging images, log pytorch tensor and save torch tensor
-  Input
-  - logger: tensorboard or wandb
-  - images: np.array
-  - epoch: int
-  """
-  # save image torch
-  save_dir = get_logger_path(config, subdir=exp_str(config))
-  save_file = f'{mode}_image_{epoch}.pth'
-  save_path = os.path.join(save_dir, save_file)
-
-  torch.save(images, save_path)
-
-  for sample in images:
-    # sample: num_classes, C, H, W
-    # make grid
-    grid = make_grid(sample, nrow=int(math.sqrt(sample.shape[0])))
-
-    if logger == 'wandb':
-      wandb.log({f'{mode}_image': [wandb.Image(grid)]}, step=epoch)
-    else:
-      try:
-        logger.add_image(f'{mode}_image', grid, epoch)
-      except:
-        raise NotImplementedError
     
 
 def print_metrics(metrics, prefix=''):
@@ -228,6 +199,9 @@ def log_cams(logger, imgs, cams, epoch, mode, config=None):
   Logging the cams
   """
   grid_cam_imgs = []
+
+  # interpolate cams as same size of image
+  cams = torch.nn.functional.interpolate(cams, size=imgs.shape[2:], mode='bicubic')
 
   for idx, (img, cam) in enumerate(zip(imgs, cams)):
     applied_imgs = []

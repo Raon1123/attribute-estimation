@@ -213,7 +213,7 @@ def evaluate_cam(model, dataloader,
 
         with torch.no_grad():
             batch_cam = model.get_cam(datas)
-        batch_cam = batch_cam.cpu() # (N, C, H, W)
+        batch_cam = batch_cam.cpu() # (N, C, 7, 7) note that normalized with [0,1]
 
         imgs.append(datas.cpu())
         cams.append(batch_cam)
