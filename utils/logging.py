@@ -16,14 +16,10 @@ try:
 except ImportError:
   wandb = None
 
-def exp_str(config):
-  logging_config = config['LOGGING']
-  log_str = [logging_config['project'], 
-             config['DATASET']['name'], 
-             logging_config['postfix']]
-  log_str = '_'.join(log_str)
-  
-  return log_str
+def project_name(config):
+  ret = [config['LOGGING']['project'], config['DATASET']['name']]
+  ret = '_'.join(ret)
+  return ret
 
 
 def get_model_path(config):
@@ -33,27 +29,33 @@ def get_model_path(config):
   if not os.path.exists(model_path):
     os.makedirs(model_path)
 
+  subdir = project_name(config)
+  model_path = os.path.join(model_path, subdir)
+  if not os.path.exists(model_path):
+    os.makedirs(model_path)
+
   return model_path
 
 
-def get_logger_path(config, subdir=''):
+def get_logger_path(config, postfix=False):
   logging_config = config['LOGGING']
   logger_path = logging_config['log_dir']
+  os.makedirs(logger_path, exist_ok=True)
 
-  if not os.path.exists(logger_path):
-    os.makedirs(logger_path)
+  subdir = project_name(config)
+  logger_path = os.path.join(logger_path, subdir)
+  os.makedirs(logger_path, exist_ok=True)
 
-  if subdir != '':
-    logger_path = os.path.join(logger_path, subdir)
-    if not os.path.exists(logger_path):
-      os.makedirs(logger_path)
+  if postfix:
+    logger_path = os.path.join(logger_path, logging_config['postfix'])
+    os.makedirs(logger_path, exist_ok=True)
 
   return logger_path
 
 
 def save_model(model, config):
   model_path = get_model_path(config)
-  model_file = exp_str(config) + '.pth'
+  model_file = config['LOGGING']['postfix'] + '.pth'
   model_path = os.path.join(model_path, model_file)
 
   torch.save(model.state_dict(), model_path)
@@ -61,7 +63,7 @@ def save_model(model, config):
 
 def load_model(model, config):
   model_path = get_model_path(config)
-  model_file = exp_str(config) + '.pth'
+  model_file = config['LOGGING']['postfix'] + '.pth'
   model_path = os.path.join(model_path, model_file)
 
   model.load_state_dict(torch.load(model_path))
@@ -71,13 +73,15 @@ def load_model(model, config):
 
 def logger_init(config):
   logging_config = config['LOGGING']
-  experiment = exp_str(config)
-  log_dir = get_logger_path(config, subdir=experiment)
+  log_dir = get_logger_path(config)
+
+  postfix = logging_config['postfix']
 
   if wandb is not None and logging_config['logger'] == 'wandb':
+    project = project_name(config)
     wandb.init(
-        project=experiment,
-        name=logging_config['postfix'],
+        project=project,
+        name=postfix,
         config=config
     )
     wandb.watch_called = False
@@ -88,7 +92,7 @@ def logger_init(config):
     raise NotImplementedError
   
   # config pickling
-  pkl_file = 'config.pkl'
+  pkl_file = f'{postfix}.pkl'
   pkl_path = os.path.join(log_dir, pkl_file)
   with open(pkl_path, 'wb') as f:
     pickle.dump(config, f)
@@ -136,7 +140,7 @@ def write_metrics(gt, preds, metrics, epoch, config):
   - preds: np.array
   - metrics: dict
   """
-  log_path = get_logger_path(config, subdir=exp_str(config))
+  log_path = get_logger_path(config, postfix=True)
 
   gt_path = os.path.join(log_path, f'gt_{epoch}.pth')
   preds_path = os.path.join(log_path, f'preds_{epoch}.pth')
@@ -182,7 +186,7 @@ def write_cams(config, imgs, cams, epoch, mode):
   """ 
   Write the file of cams
   """
-  log_dir = get_logger_path(config, subdir=exp_str(config))
+  log_dir = get_logger_path(config, postfix=True)
 
   img_file = f'{mode}img_{epoch}.pth'
   cam_file = f'{mode}cam_{epoch}.pth'
@@ -192,6 +196,22 @@ def write_cams(config, imgs, cams, epoch, mode):
 
   torch.save(imgs, img_path)
   torch.save(cams, cam_path)
+
+  for idx, (img, cam) in enumerate(zip(imgs, cams)):
+    applied_imgs = []
+    num_class = cam.shape[0]
+    for attribute_cam in cam:
+      applied_imgs.append(heatmap_on_image(img, attribute_cam, 0.7))
+
+    # make grid
+    img_grid = make_grid(applied_imgs, nrow=int(math.sqrt(num_class)))
+    img_grid = img_grid.permute(1, 2, 0).numpy()
+
+    # save grid image
+    grid_img_file = f'{mode}{idx}_{epoch}_grid.png'
+    grid_img_path = os.path.join(log_dir, grid_img_file)
+    plt.imshow(img_grid)
+    plt.savefig(grid_img_path)
 
 
 def log_cams(logger, imgs, cams, epoch, mode, config=None):
@@ -221,14 +241,3 @@ def log_cams(logger, imgs, cams, epoch, mode, config=None):
         logger.add_image(img_name, img_grid, epoch)
       except:
         raise NotImplementedError
-    
-  # write image
-    if config is not None:
-      log_dir = get_logger_path(config, subdir=exp_str(config))
-      img_file = f'{img_name}.png'
-      img_path = os.path.join(log_dir, img_file)
-
-      img_grid = img_grid.permute(1, 2, 0).numpy()
-
-      plt.imshow(img_grid)
-      plt.savefig(img_path)
