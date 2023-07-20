@@ -197,6 +197,9 @@ def write_cams(config, imgs, cams, epoch, mode):
   torch.save(imgs, img_path)
   torch.save(cams, cam_path)
 
+  # interpolate cams as same size of image
+  cams = torch.nn.functional.interpolate(cams, size=imgs.shape[2:], mode='bicubic')
+
   for idx, (img, cam) in enumerate(zip(imgs, cams)):
     applied_imgs = []
     num_class = cam.shape[0]
