@@ -105,5 +105,13 @@ def get_scheduler(optimizer, config):
             milestones=scheduler_config['milestones'],
             gamma=scheduler_config['gamma']
         )
+    elif scheduler_config['name'] == 'CosineAnnealingLR':
+        scheduler = optim.lr_scheduler.CosineAnnealingLR(
+            optimizer,
+            T_max=scheduler_config['T_max'],
+            eta_min=scheduler_config['eta_min']
+        )
+    else:
+        raise NotImplementedError
 
     return scheduler
