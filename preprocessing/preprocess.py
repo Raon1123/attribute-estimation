@@ -40,7 +40,7 @@ def preprocess_rap1(args):
     test_label = label[test, :]
 
     # masking the label
-    train_mask = get_masked_label(train_label, args.masking_rate)
+    train_mask = get_masked_label(train_label, args.unmasking_rate)
 
     proc_dict = {
         'img_root': img_root,
@@ -110,7 +110,7 @@ def preprocess_pascal(args):
             label_matrix[phase][i, label_indicies] = 1.0
 
     # masking the label
-    train_mask = get_masked_label(label_matrix['train'], args.masking_rate)
+    train_mask = get_masked_label(label_matrix['train'], args.unmasking_rate)
 
     proc_dict = {
         'img_root': img_root,
@@ -190,7 +190,7 @@ def preprocess_coco(args):
         test_image_ids[row_index] = int(image_id)
 
     # masking the label
-    train_mask = get_masked_label(train_label_matrix, args.masking_rate)
+    train_mask = get_masked_label(train_label_matrix, args.unmasking_rate)
 
     # image file name
     train_image = ['train2014/COCO_train2014_{:012d}.jpg'.format(int(train_image_ids[i])) for i in range(num_train_images)]
@@ -210,13 +210,13 @@ def preprocess_coco(args):
     return proc_dict
 
 
-def get_masked_label(labels, masking_rate, masking_type='random'):
+def get_masked_label(labels, unmasking_rate, masking_type='random'):
     """
     Generate masked label matrix
 
     Input
     - labels: label numpy matrix
-    - masking_rate: masking rate, when -1.0, masking all labels except for one
+    - unmasking_rate: masking rate, when -1.0, masking all labels except for one
     - masking_type: masking type, random or frequency
 
     Output
@@ -225,13 +225,13 @@ def get_masked_label(labels, masking_rate, masking_type='random'):
     num_instances, num_classes = labels.shape
     masked_labels = np.zeros((num_instances, num_classes))
 
-    if masking_rate == 0.0:
+    if unmasking_rate == 0.0:
         return masked_labels
 
-    if masking_rate == -1.0:
+    if unmasking_rate == -1.0:
         num_masked_labels = num_classes - 1
     else:
-        num_masked_labels = int(num_classes * masking_rate)
+        num_masked_labels = int(num_classes * unmasking_rate)
 
     if masking_type != 'random':
         raise NotImplementedError
@@ -259,7 +259,7 @@ def argparser():
                         help='index of RAPv1 dataset')
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--force', action='store_true', default=False)
-    parser.add_argument('--masking_rate', type=float, default=-1.0)
+    parser.add_argument('--unmasking_rate', type=float, default=-1.0)
     parser.add_argument('--masking_type', type=str, default='random', choices=['random', 'frequency']) # TODO add maksing type
     
     args = parser.parse_args()
@@ -271,7 +271,7 @@ def argparser():
 if __name__ == "__main__":
     args = argparser()
 
-    pkl_file = '_'.join([args.dataset, str(args.masking_rate), str(args.seed),'preprocess.pkl'])
+    pkl_file = '_'.join([args.dataset, str(args.unmasking_rate), str(args.seed),'preprocess.pkl'])
     save_path = os.path.join(args.save_dir, pkl_file)
     # check if save path exists
     if os.path.exists(save_path) and not args.force:
@@ -296,7 +296,7 @@ if __name__ == "__main__":
     print('Preprocessing done!')
     print('Saved at {}'.format(save_path))
     print('Dataset: {}'.format(args.dataset))
-    print('Masking rate: {}'.format(args.masking_rate))
+    print('Masking rate: {}'.format(args.unmasking_rate))
     print('Number of train images: {}'.format(len(proc_dict['train_img_file'])))
     print('Number of test images: {}'.format(len(proc_dict['test_img_file'])))
     print('Number of attributes: {}'.format(len(proc_dict['label_str'])))
