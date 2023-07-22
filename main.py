@@ -2,8 +2,6 @@ import yaml
 import tqdm
 import argparse
 
-import torch
-
 from attributedataset.datasetutils import get_dataloader
 
 import models.modelutils as modelutils
@@ -32,7 +30,30 @@ def main(config):
         log_interval = 1
         save_imgs = 1
 
-    train_dataloader, test_dataloader, num_classes = get_dataloader(config)
+    try:
+        pkl_list = config['DATASET']['pkl_list']
+    except:
+        pkl_list = [config['DATASET']['pkl_file']]
+
+    for pkl_file in pkl_list:
+        config['DATASET']['pkl_file'] = pkl_file
+
+        train_dataloader, test_dataloader, meta_info = get_dataloader(config)
+        num_classes = meta_info['num_classes']
+        
+        """
+        experiment(train_dataloader, test_dataloader, num_classes,
+                    log_interval=log_interval, save_imgs=save_imgs,
+                    use_feature=use_feature, device=device)
+        """
+
+def experiment(train_dataloader, 
+               test_dataloader, 
+               num_classes,
+               log_interval=1,
+               save_imgs=1,
+               use_feature=False,
+               device='cpu'):
     model = modelutils.get_model(config, num_classes, use_feature=use_feature).to(device)
     logger = logging.logger_init(config)
 
@@ -82,13 +103,12 @@ def main(config):
             logging.write_cams(config, imgs, cams, epoch, mode='test')
             logging.log_cams(logger, imgs, cams, epoch, mode='test', config=config)
 
-
     metrics = epochs.evaluate_result(
         model, test_dataloader, epoch, config, device, 
         saving=True, masking=True)
     logging.print_metrics(metrics)
     logging.save_model(model, config)
-    
+
 
 def argparser():
     parser = argparse.ArgumentParser()

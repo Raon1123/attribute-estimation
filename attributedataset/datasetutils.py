@@ -106,7 +106,12 @@ def get_dataset(config):
                                       test_feature,
                                       test_label)
 
-    return train_dataset, test_dataset, num_classes
+    meta_info = {
+        'label_str': label_str,
+        'num_classes': num_classes
+    }
+
+    return train_dataset, test_dataset, meta_info
 
 
 def get_dataloader(config):
@@ -116,7 +121,7 @@ def get_dataloader(config):
     Input
     - config: config variable for setting, see load_config() in main.py
     """
-    train_dataset, test_dataset, num_classes = get_dataset(config)
+    train_dataset, test_dataset, meta_info = get_dataset(config)
 
     loader_config = config['loader']
 
@@ -133,7 +138,7 @@ def get_dataloader(config):
         num_workers=loader_config['num_workers']
     )
 
-    return train_dataloader, test_dataloader, num_classes
+    return train_dataloader, test_dataloader, meta_info
 
 
 def generate_feature(config):
