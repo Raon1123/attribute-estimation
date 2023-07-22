@@ -75,7 +75,12 @@ def logger_init(config):
   logging_config = config['LOGGING']
   log_dir = get_logger_path(config)
 
-  postfix = logging_config['postfix']
+  pkl_file = config['DATASET']['pkl_file']
+  pkl_file = pkl_file.split('_')
+  split_seed = pkl_file[3]
+  split_seed = f'seed{split_seed}'
+  postfix = [split_seed, logging_config['postfix']]
+  postfix = '_'.join(postfix)
 
   if wandb is not None and logging_config['logger'] == 'wandb':
     project = project_name(config)
