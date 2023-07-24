@@ -77,8 +77,8 @@ def experiment(train_dataloader,
         # logging loss
         pbar.set_description(
             f"Epoch {epoch+1} | Train Loss: {train_loss:.5f} | Test Loss: {test_loss:.5f}")
-        logging.log_loss(logger, train_loss, epoch, 'train', config)
-        logging.log_loss(logger, test_loss, epoch, 'test', config)
+        loss_dict = {'train_loss': train_loss, 'test_loss': test_loss}
+        logging.log_loss(logger, loss_dict, epoch, config)
 
         # logging metrics
         train_metrics = epochs.evaluate_result(

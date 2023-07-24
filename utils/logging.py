@@ -105,12 +105,12 @@ def logger_init(config):
   return logger
 
 
-def log_loss(logger, loss, epoch, mode, config=None):
+def log_loss(logger, loss_dict, epoch, config=None):
   if logger == 'wandb':
-    wandb.log({f'{mode}_loss': loss}, step=epoch)
+    wandb.log(loss_dict, step=epoch)
   else:
     try:
-      logger.add_scalar(f'{mode}_loss', loss, epoch)
+      logger.add_scalar(loss_dict, epoch)
     except:
       raise NotImplementedError
   
