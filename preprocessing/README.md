@@ -14,7 +14,7 @@ Required
 Optional
 - `--seed`: generation seed 
 - `--force`: generate even file exist
-- `--masking_rate`: masking ratio of data
+- `--unmasking_rate`: masking ratio of data
 - Special: `-i` index for RAPv1 dataset
 
 ## Format
