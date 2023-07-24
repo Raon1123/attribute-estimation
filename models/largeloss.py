@@ -54,7 +54,10 @@ class LargeLossMatters(nn.Module):
           for param in self.backbone.parameters():
             param.requires_grad = True
       
-      self.fc = nn.Linear(2048, num_classes)
+      if backbone in ['resnet18', 'resnet34']:
+        self.fc = nn.Linear(512, num_classes)
+      elif backbone == 'resnet50':
+        self.fc = nn.Linear(2048, num_classes)
     
     def forward(self, x):
       features = self.feature(x)
@@ -163,7 +166,10 @@ class BoostCAM(nn.Module):
           for param in self.backbone.parameters():
             param.requires_grad = True
 
-      self.onebyoneconv = nn.Conv2d(2048, num_classes, 1, 1)
+      if backbone in ['resnet18', 'resnet34']:
+        self.onebyoneconv = nn.Conv2d(512, num_classes, 1, 1)
+      elif backbone == 'resnet50':
+        self.onebyoneconv = nn.Conv2d(2048, num_classes, 1, 1)
       
   def forward(self, x):
     backbone_logits = self.backbone(x)
