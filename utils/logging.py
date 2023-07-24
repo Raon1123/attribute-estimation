@@ -77,7 +77,7 @@ def logger_init(config):
 
   pkl_file = config['DATASET']['pkl_file']
   pkl_file = pkl_file.split('_')
-  split_seed = pkl_file[3]
+  split_seed = pkl_file[2]
   split_seed = f'seed{split_seed}'
   postfix = [split_seed, logging_config['postfix']]
   postfix = '_'.join(postfix)
