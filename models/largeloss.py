@@ -11,6 +11,22 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
+def get_backbone(backbone):
+  if backbone == 'resnet18':
+    backbone = torchvision.models.resnet18(weights=torchvision.models.ResNet18_Weights.DEFAULT)
+    backbone = nn.Sequential(*list(backbone.children())[:-2]) # (N, 2048, 14, 14)
+  elif backbone == 'resnet34':
+    backbone = torchvision.models.resnet34(weights=torchvision.models.ResNet34_Weights.DEFAULT)
+    backbone = nn.Sequential(*list(backbone.children())[:-2]) # (N, 2048, 14, 14)
+  elif backbone == 'resnet50':
+    backbone = torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.DEFAULT)
+    backbone = nn.Sequential(*list(backbone.children())[:-2]) # (N, 2048, 14, 14)
+  else:
+    raise NotImplementedError
+  
+  return backbone
+
+
 class LargeLossMatters(nn.Module):
     def __init__(self,
                  num_classes,
@@ -29,13 +45,8 @@ class LargeLossMatters(nn.Module):
 
       if use_feature:
         self.backbone = None
-      elif backbone == 'resnet50':
-        self.backbone = torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.DEFAULT)
-        self.backbone = nn.Sequential(*list(self.backbone.children())[:-2]) # (N, 2048, 14, 14)
       else:
-        raise NotImplementedError
-      
-      if not use_feature:
+        self.backbone = get_backbone(backbone)
         if freeze_backbone:
           for param in self.backbone.parameters():
             param.requires_grad = False
@@ -143,13 +154,8 @@ class BoostCAM(nn.Module):
 
       if use_feature:
         self.backbone = None
-      elif backbone == 'resnet50':
-        self.backbone = torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.DEFAULT)
-        self.backbone = nn.Sequential(*list(self.backbone.children())[:-2]) # (N, 2048, 14, 14)
       else:
-        raise NotImplementedError
-      
-      if not use_feature:
+        self.backbone = get_backbone(backbone)
         if freeze_backbone:
           for param in self.backbone.parameters():
             param.requires_grad = False
