@@ -46,15 +46,16 @@ def train_epoch(model, train_dataloader, optimizer, config, device='cpu'):
     method_name = method_config['name']
 
     for batch in train_dataloader:
-        data, target = parse_batch(batch, device=device)
+        # data, target = parse_batch(batch, device=device)
+        data, target, mask = batch
 
         optimizer.zero_grad()
         if method_name in ['LargeLossMatters', 'BoostCAM']:
-            loss, correction_idx = model.loss(data, target)
+            loss, correction_idx = model.loss(data, target, mask)
             if config['METHOD']['mod_scheme'] == 'LL-Cp' and correction_idx is not None:
                 raise NotImplementedError
         else:
-            loss = model.loss(data, target)
+            loss = model.loss(data, target, mask)
         loss.backward()
         optimizer.step()
 
@@ -82,13 +83,14 @@ def test_epoch(model, test_dataloader, config, device='cpu'):
     method_name = method_config['name']
  
     for batch in test_dataloader:
-        data, target = parse_batch(batch, device=device)
+        #data, target = parse_batch(batch, device=device)
+        data, target, mask = batch
 
         with torch.no_grad():
             if method_name in ['LargeLossMatters', 'BoostCAM']:
-                loss, _ = model.loss(data, target)
+                loss, _ = model.loss(data, target, mask)
             else:
-                loss = model.loss(data, target)
+                loss = model.loss(data, target, mask)
 
             test_loss += loss.item()
 
