@@ -8,6 +8,10 @@ import models.modelutils as modelutils
 import utils.epochs as epochs
 import utils.logging as logging
 
+try:
+    import wandb
+except ImportError:
+    wandb = None
 
 def load_config(args):
     with open(args.config, 'r') as f:
@@ -109,6 +113,9 @@ def experiment(train_dataloader,
         saving=True, masking=True)
     logging.print_metrics(metrics)
     logging.save_model(model, config)
+
+    if wandb is not None:
+        wandb.finish()
 
 def argparser():
     parser = argparse.ArgumentParser()
