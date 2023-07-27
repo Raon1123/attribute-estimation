@@ -18,6 +18,7 @@ except ImportError:
 def main(config):
     # define device
     device = config['device']
+    
     use_feature = parsing.get_use_feature(config)
     log_interval, save_imgs = parsing.get_log_configs(config)
     pkl_list = parsing.get_pkl_list(config)
@@ -26,11 +27,11 @@ def main(config):
         config['DATASET']['pkl_file'] = pkl_file
 
         train_dataloader, test_dataloader, meta_info = get_dataloader(config)
-        num_classes = meta_info['num_classes']
         
-        experiment(train_dataloader, test_dataloader, num_classes,
-                    log_interval=log_interval, save_imgs=save_imgs,
-                    use_feature=use_feature, device=device)
+        experiment(train_dataloader, test_dataloader, 
+                   meta_info=meta_info,
+                   log_interval=log_interval, save_imgs=save_imgs,
+                   use_feature=use_feature, device=device)
         
         if wandb is not None:
             wandb.finish()
@@ -38,11 +39,14 @@ def main(config):
         
 def experiment(train_dataloader, 
                test_dataloader, 
-               num_classes,
+               meta_info,
                log_interval=1,
                save_imgs=1,
                use_feature=False,
                device='cpu'):
+    num_classes = meta_info['num_classes']
+    label_str = meta_info['label_str']
+
     # define model and logger
     model = modelutils.get_model(config, num_classes, use_feature=use_feature).to(device)
     logger = logging.logger_init(config)
@@ -82,16 +86,24 @@ def experiment(train_dataloader,
         # logging cams
         if (epoch + 1) % log_interval == 0:
             # train cams
-            imgs, cams = epochs.evaluate_cam(model, train_dataloader, num_imgs=save_imgs, device=device)
-            imgs, cams = imgs[:save_imgs], cams[:save_imgs] # (save_imgs, num_classes, H, W), (save_imgs, num_classes, 7, 7)
-            logging.write_cams(config, imgs, cams, epoch, mode='train')
-            logging.log_cams(logger, imgs, cams, epoch, mode='train', config=config)
+            img_list, cam_list, target_list, pred_list, mask_list = epochs.evaluate_cam(model, train_dataloader, num_imgs=save_imgs, device=device)
+            img_list, cam_list = img_list[:save_imgs], cam_list[:save_imgs] # (save_imgs, num_classes, H, W), (save_imgs, num_classes, 7, 7)
+            logging.write_cams(config, 
+                               img_list, cam_list, target_list, pred_list, mask_list, 
+                               epoch, mode='train', label_str=label_str)
+            logging.log_cams(logger, 
+                             img_list, cam_list, target_list, pred_list, mask_list,
+                             epoch, mode='train', config=config, label_str=label_str)
 
             # test cams
-            imgs, cams = epochs.evaluate_cam(model, test_dataloader, num_imgs=save_imgs, device=device)
-            imgs, cams = imgs[:save_imgs], cams[:save_imgs]
-            logging.write_cams(config, imgs, cams, epoch, mode='test')
-            logging.log_cams(logger, imgs, cams, epoch, mode='test', config=config)
+            img_list, cam_list, target_list, pred_list, mask_list = epochs.evaluate_cam(model, test_dataloader, num_imgs=save_imgs, device=device)
+            img_list, cam_list = img_list[:save_imgs], cam_list[:save_imgs]
+            logging.write_cams(config, 
+                               img_list, cam_list, target_list, pred_list, mask_list,
+                               epoch, mode='test', label_str=label_str)
+            logging.log_cams(logger, 
+                             img_list, cam_list, target_list, pred_list, mask_list,
+                             epoch, mode='test', config=config, label_str=label_str)
 
     metrics = epochs.evaluate_result(
         model, test_dataloader, epoch, config, device, 

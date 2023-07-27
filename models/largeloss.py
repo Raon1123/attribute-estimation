@@ -103,13 +103,7 @@ class LargeLossMatters(nn.Module):
         raise NotImplementedError
       
       unobserved_loss = (labels == 0).bool() * loss_matrix # (N)
-      try:
-        topk = torch.topk(unobserved_loss.flatten(), k)
-      except:
-        print(batch_size)
-        print(num_classes)
-        print(k)
-        raise NotImplementedError('topk error')
+      topk = torch.topk(unobserved_loss.flatten(), k)
       topk_lossval = topk.values[-1]
       correction_idx = torch.where(unobserved_loss > topk_lossval)
 
@@ -135,6 +129,11 @@ class LargeLossMatters(nn.Module):
     
     def decrease_clean_rate(self):
       self.clean_rate = self.clean_rate - self.delta_rel
+
+    def prediction(self, x):
+      preds = self.forward(x)
+      preds = torch.sigmoid(preds)
+      return preds
 
 
 class BoostCAM(nn.Module):
@@ -235,3 +234,10 @@ class BoostCAM(nn.Module):
     # normalize CAM
     CAM = (CAM - CAM.min()) / (CAM.max() - CAM.min() + 1e-8)
     return CAM
+  
+  def prediction(self, x):
+    logits = self.forward(x)
+    if logits.dim() == 1:
+      logits = logits.unsqueeze(0)
+    preds = torch.sigmoid(logits)
+    return preds
