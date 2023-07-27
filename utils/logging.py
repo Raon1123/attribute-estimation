@@ -158,7 +158,6 @@ def write_metrics(gt, preds, metrics, epoch, config):
     pickle.dump(metrics, f)
 
 
-
 def unnormalize(img):
     """
     unnormalize image
@@ -249,24 +248,6 @@ def write_cams(config,
 
   # interpolate cams as same size of image
   cam_list = torch.nn.functional.interpolate(cam_list, size=img_list.shape[2:], mode='bicubic')
-
-  """
-  for idx, (img, cam) in enumerate(zip(img_list, cam_list)):
-    applied_imgs = []
-    num_class = cam.shape[0]
-    for attribute_cam in cam:
-      applied_imgs.append(heatmap_on_image(img, attribute_cam, 0.7))
-
-    # make grid
-    img_grid = make_grid(applied_imgs, nrow=int(math.sqrt(num_class)))
-    img_grid = img_grid.permute(1, 2, 0).numpy()
-
-    # save grid image
-    grid_img_file = f'{mode}{idx}_{epoch}_grid.png'
-    grid_img_path = os.path.join(log_dir, grid_img_file)
-    plt.imshow(img_grid)
-    plt.savefig(grid_img_path)
-  """
 
   # write grid image
   num_classes = len(label_str)
