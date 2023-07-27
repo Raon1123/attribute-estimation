@@ -277,11 +277,7 @@ def write_cams(config,
     grid_img_file = f'{mode}{fig_idx}_{epoch}_grid.png'
     grid_img_path = os.path.join(log_dir, grid_img_file)
 
-    try:
-      target_string = label_list_to_str(target, label_str)
-    except:
-      print(target.shape)
-      print(target)
+    target_string = label_list_to_str(target, label_str)
     pred_string = label_list_to_str(pred, label_str)
     mask_string = label_list_to_str(mask, label_str)
 

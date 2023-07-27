@@ -133,15 +133,12 @@ def _evaluate_data(model, dataloader, config, device='cpu', masking=False):
         data = data.to(device)
 
         with torch.no_grad():
-            logits = model.forward(data)
-            if method_name in ['LargeLossMatters', 'BoostCAM']:
-                if logits.dim() == 1:
-                    logits = logits.unsqueeze(0)
-                preds = torch.sigmoid(logits)
+            preds = model.prediction(data)
 
-            batch_sz = logits.size(0)
+            batch_sz = preds.size(0)
             pred[start_idx:start_idx+batch_sz] = preds.cpu().numpy()
             targets[start_idx:start_idx+batch_sz] = target.numpy()
+            
             if masking:
                 masked_targets[start_idx:start_idx+batch_sz] = masked_target.numpy()
 
