@@ -1,43 +1,26 @@
-import yaml
+# Description: Main script for training and testing
+
 import tqdm
-import argparse
 
 from attributedataset.datasetutils import get_dataloader
 
 import models.modelutils as modelutils
 import utils.epochs as epochs
 import utils.logging as logging
+import utils.parsing as parsing
 
 try:
     import wandb
 except ImportError:
     wandb = None
 
-def load_config(args):
-    with open(args.config, 'r') as f:
-        config = yaml.load(f, Loader=yaml.FullLoader)
-    return config
-
 
 def main(config):
     # define device
     device = config['device']
-    try:
-        use_feature = config['DATASET']['use_feature']
-    except:
-        use_feature = False
-
-    try:
-        log_interval = config['LOGGING']['log_interval']
-        save_imgs = config['LOGGING']['save_imgs']
-    except:
-        log_interval = 1
-        save_imgs = 1
-
-    try:
-        pkl_list = config['DATASET']['pkl_list']
-    except:
-        pkl_list = [config['DATASET']['pkl_file']]
+    use_feature = parsing.get_use_feature(config)
+    log_interval, save_imgs = parsing.get_log_configs(config)
+    pkl_list = parsing.get_pkl_list(config)
 
     for pkl_file in pkl_list:
         config['DATASET']['pkl_file'] = pkl_file
@@ -49,8 +32,10 @@ def main(config):
                     log_interval=log_interval, save_imgs=save_imgs,
                     use_feature=use_feature, device=device)
         
+        if wandb is not None:
+            wandb.finish()
         
-
+        
 def experiment(train_dataloader, 
                test_dataloader, 
                num_classes,
@@ -114,20 +99,11 @@ def experiment(train_dataloader,
     logging.print_metrics(metrics)
     logging.save_model(model, config)
 
-    if wandb is not None:
-        wandb.finish()
-
-def argparser():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--config', type=str, default='config.yml')
-    parser.add_argument('--feature', action='store_true')
-    return parser.parse_args()
-
 
 if __name__ == "__main__":
     # Config load
-    args = argparser()
-    config = load_config(args)
+    args = parsing.argparser()
+    config = parsing.load_config(args)
     print(config)
 
     if args.feature:
