@@ -239,5 +239,9 @@ def evaluate_cam(model, dataloader,
     cam_list = torch.cat(cam_list, dim=0)
     cam_list = cam_list * 255.0
 
+    target_list = torch.cat(target_list, dim=0)
+    pred_list = torch.cat(pred_list, dim=0)
+    mask_list = torch.cat(mask_list, dim=0)
+
     # return as pytorch tensor
     return img_list, cam_list, target_list, pred_list, mask_list

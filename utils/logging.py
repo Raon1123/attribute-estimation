@@ -158,6 +158,22 @@ def write_metrics(gt, preds, metrics, epoch, config):
     pickle.dump(metrics, f)
 
 
+
+def unnormalize(img):
+    """
+    unnormalize image
+    """
+    if isinstance(img, torch.Tensor):
+        img = img.detach().cpu().numpy()
+
+    mn = np.array([0.485, 0.456, 0.406]).reshape(3, 1, 1)
+    st = np.array([0.229, 0.224, 0.225]).reshape(3, 1, 1)
+    img = img * st + mn
+    img = np.transpose(img, (1, 2, 0))
+    img = img * 255
+    return img
+
+
 def heatmap_on_image(img, heatmap, alpha=0.5):
   """
   draw heatmap on image
@@ -169,11 +185,14 @@ def heatmap_on_image(img, heatmap, alpha=0.5):
   - ret: np.array
   """
   # img to np.array
-  img = img.numpy().transpose(1, 2, 0).astype(np.uint8)
-  heatmap = heatmap.numpy().astype(np.uint8)
+  img = unnormalize(img).astype(np.uint8)
+  img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
+  heatmap = heatmap.numpy().astype(np.uint8)
   heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_INFERNO)
+
   ret = cv2.addWeighted(heatmap, alpha, img, 1-alpha, 0)
+  ret = cv2.cvtColor(ret, cv2.COLOR_BGR2RGB)
 
   # img to pytorch tensor
   ret = TF.to_tensor(ret)
@@ -187,14 +206,16 @@ def print_metrics(metrics, prefix=''):
   print()
 
 
-def label_list_to_str(labels, label_to_str):
+def label_list_to_str(labels, label_to_str, threshold=0.5):
     """
     Boolean label list to string list.
     """
     ret = []
+    labels = (labels > threshold)
     for i, label in enumerate(labels):
         if label == 1:
-           ret.append(label_to_str[i])
+          ret.append(label_to_str[i])
+    ret = ', '.join(ret)
     return ret 
 
 
@@ -249,8 +270,8 @@ def write_cams(config,
 
   # write grid image
   num_classes = len(label_str)
-  num_rows = int(math.sqrt(num_classes))
-  num_cols = int(math.sqrt(num_classes))
+  num_rows = int(math.sqrt(num_classes)) + 1
+  num_cols = int(math.sqrt(num_classes)) + 1
   
   num_figs = img_list.shape[0]
 
@@ -266,14 +287,20 @@ def write_cams(config,
 
     for class_idx, attribute_cam in enumerate(cam):
       ax = fig.add_subplot(num_rows, num_cols, class_idx+1)
-      ax.imshow(heatmap_on_image(img, attribute_cam, 0.7))
+      heatmapimg = heatmap_on_image(img, attribute_cam, 0.7)
+      heatmapimg = heatmapimg.numpy().transpose(1, 2, 0)
+      ax.imshow(heatmapimg)
       ax.set_title(label_str[class_idx])
       ax.axis('off')
 
     grid_img_file = f'{mode}{fig_idx}_{epoch}_grid.png'
     grid_img_path = os.path.join(log_dir, grid_img_file)
 
-    target_string = label_list_to_str(target, label_str)
+    try:
+      target_string = label_list_to_str(target, label_str)
+    except:
+      print(target.shape)
+      print(target)
     pred_string = label_list_to_str(pred, label_str)
     mask_string = label_list_to_str(mask, label_str)
 
