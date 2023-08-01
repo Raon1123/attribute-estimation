@@ -188,7 +188,7 @@ def heatmap_on_image(img, heatmap, alpha=0.5):
   img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
   heatmap = heatmap.numpy().astype(np.uint8)
-  heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_INFERNO)
+  heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
 
   ret = cv2.addWeighted(heatmap, alpha, img, 1-alpha, 0)
   ret = cv2.cvtColor(ret, cv2.COLOR_BGR2RGB)
