@@ -71,14 +71,54 @@ def load_model(model, config):
   return model
 
 
+def get_exp_conf(config):
+  unmasking_ratio, split_seed = parse_pkl_file(config['LOGGING']['pkl_file'])
+
+  data_conf = {
+    'dataset': config['DATASET']['name'],
+    'split_seed': split_seed,
+    'unmasking_ratio': unmasking_ratio,
+  }
+
+  model_conf = {
+    'model': config['MODEL']['name'],
+    'backbone': config['MODEL']['backbone'],
+    'mod_scheme': config['MODEL']['mod_scheme'],
+    'delta_rel': config['MODEL']['delta_rel'],
+  }
+
+  optimizer_conf = {
+    'optimizer': config['OPTIMIZER']['name'],
+    'lr': config['OPTIMIZER']['lr'],
+    'weight_decay': config['OPTIMIZER']['weight_decay'],
+    'epochs': config['OPTIMIZER']['epochs'],
+    'batch_size': config['loader']['batch_size'],
+    'scheduler': config['OPTIMIZER']['scheduler'],
+  }
+
+  conf = {
+    'dataset': data_conf,
+    'model': model_conf,
+    'optimizer': optimizer_conf,
+  }
+
+  return conf
+
+
+def parse_pkl_file(pkl_file):
+  pkl_split = pkl_file.split('_')
+  
+  unmasking_ratio = pkl_split[1]
+  split_seed = pkl_split[2]
+
+  return unmasking_ratio, split_seed
+
+
 def logger_init(config):
   logging_config = config['LOGGING']
   log_dir = get_logger_path(config)
 
-  pkl_file = config['DATASET']['pkl_file']
-  pkl_file = pkl_file.split('_')
-  split_seed = pkl_file[2]
-  split_seed = f'seed{split_seed}'
+  _, split_seed = parse_pkl_file(logging_config['pkl_file'])
   postfix = [split_seed, logging_config['postfix']]
   postfix = '_'.join(postfix)
 
