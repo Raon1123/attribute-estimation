@@ -28,7 +28,7 @@ def main(config):
 
         train_dataloader, test_dataloader, meta_info = get_dataloader(config)
         
-        experiment(train_dataloader, test_dataloader, 
+        experiment(train_dataloader, test_dataloader, config,
                    meta_info=meta_info,
                    log_interval=log_interval, save_imgs=save_imgs,
                    use_feature=use_feature, device=device)
@@ -38,12 +38,16 @@ def main(config):
         
         
 def experiment(train_dataloader, 
-               test_dataloader, 
+               test_dataloader,
+               config,
                meta_info,
                log_interval=1,
                save_imgs=1,
                use_feature=False,
                device='cpu'):
+    """
+    A single experiment
+    """
     num_classes = meta_info['num_classes']
     label_str = meta_info['label_str']
 
@@ -88,6 +92,7 @@ def experiment(train_dataloader,
             # train cams
             img_list, cam_list, target_list, pred_list, mask_list = epochs.evaluate_cam(model, train_dataloader, num_imgs=save_imgs, device=device)
             img_list, cam_list = img_list[:save_imgs], cam_list[:save_imgs] # (save_imgs, num_classes, H, W), (save_imgs, num_classes, 7, 7)
+            target_list, pred_list, mask_list = target_list[:save_imgs], pred_list[:save_imgs], mask_list[:save_imgs]
             logging.write_cams(config, 
                                img_list, cam_list, target_list, pred_list, mask_list, 
                                epoch, mode='train', label_str=label_str)
@@ -98,6 +103,7 @@ def experiment(train_dataloader,
             # test cams
             img_list, cam_list, target_list, pred_list, mask_list = epochs.evaluate_cam(model, test_dataloader, num_imgs=save_imgs, device=device)
             img_list, cam_list = img_list[:save_imgs], cam_list[:save_imgs]
+            target_list, pred_list, mask_list = target_list[:save_imgs], pred_list[:save_imgs], mask_list[:save_imgs]
             logging.write_cams(config, 
                                img_list, cam_list, target_list, pred_list, mask_list,
                                epoch, mode='test', label_str=label_str)

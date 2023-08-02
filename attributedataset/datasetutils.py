@@ -128,7 +128,7 @@ def get_dataloader(config):
     """
     train_dataset, test_dataset, meta_info = get_dataset(config)
 
-    loader_config = config['loader']
+    loader_config = config['DATALOADER']
 
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset,

@@ -231,7 +231,8 @@ def get_masked_label(labels, unmasking_rate, masking_type='random'):
     if unmasking_rate == -1.0:
         num_masked_labels = num_classes - 1
     else:
-        num_masked_labels = int(num_classes * unmasking_rate)
+        masking_rate = 1.0 - unmasking_rate
+        num_masked_labels = int(num_classes * masking_rate)
 
     if masking_type != 'random':
         raise NotImplementedError

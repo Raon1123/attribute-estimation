@@ -72,7 +72,7 @@ def load_model(model, config):
 
 
 def get_exp_conf(config):
-  unmasking_ratio, split_seed = parse_pkl_file(config['LOGGING']['pkl_file'])
+  unmasking_ratio, split_seed = parse_pkl_file(config['DATASET']['pkl_file'])
 
   data_conf = {
     'dataset': config['DATASET']['name'],
@@ -81,10 +81,10 @@ def get_exp_conf(config):
   }
 
   model_conf = {
-    'model': config['MODEL']['name'],
-    'backbone': config['MODEL']['backbone'],
-    'mod_scheme': config['MODEL']['mod_scheme'],
-    'delta_rel': config['MODEL']['delta_rel'],
+    'model': config['METHOD']['name'],
+    'backbone': config['METHOD']['backbone'],
+    'mod_scheme': config['METHOD']['mod_scheme'],
+    'delta_rel': config['METHOD']['delta_rel'],
   }
 
   optimizer_conf = {
@@ -92,7 +92,7 @@ def get_exp_conf(config):
     'lr': config['OPTIMIZER']['lr'],
     'weight_decay': config['OPTIMIZER']['weight_decay'],
     'epochs': config['OPTIMIZER']['epochs'],
-    'batch_size': config['loader']['batch_size'],
+    'batch_size': config['DATALOADER']['batch_size'],
     'scheduler': config['OPTIMIZER']['scheduler'],
   }
 
@@ -118,16 +118,17 @@ def logger_init(config):
   logging_config = config['LOGGING']
   log_dir = get_logger_path(config)
 
-  _, split_seed = parse_pkl_file(logging_config['pkl_file'])
+  _, split_seed = parse_pkl_file(config['DATASET']['pkl_file'])
   postfix = [split_seed, logging_config['postfix']]
   postfix = '_'.join(postfix)
 
   if wandb is not None and logging_config['logger'] == 'wandb':
     project = project_name(config)
+    conf = get_exp_conf(config)
     wandb.init(
         project=project,
         name=postfix,
-        config=config
+        config=conf
     )
     wandb.watch_called = False
     logger = 'wandb'
