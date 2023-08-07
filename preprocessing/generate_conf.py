@@ -147,7 +147,7 @@ def main():
     masking_ratios = [0.0, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9]
     
     for masking_ratio in masking_ratios:
-        lr = 1e-5
+        lr = 1e-4
         wd = 1e-4
         write_conf(args, project_name, masking_ratio, lr, wd)
         wd = 0.0
