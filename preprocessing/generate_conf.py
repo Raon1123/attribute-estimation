@@ -12,7 +12,9 @@ def parse_args():
     return args
 
 
-def write_conf(args, project_name, masking_ratio, lr, wd):
+def write_conf(args, project_name, 
+               masking_ratio, masking_type, 
+               lr, wd):
     dataset = args.dataset
 
     postfixs = [f'msk{masking_ratio}',
@@ -20,7 +22,7 @@ def write_conf(args, project_name, masking_ratio, lr, wd):
                 f'wd{wd}']
     postfixs = '_'.join(postfixs)
 
-    config_dir = os.path.join(os.path.dirname(__file__), '..', 'configs', dataset)
+    config_dir = os.path.join(os.path.dirname(__file__), '..', 'configs', dataset, project_name)
     os.makedirs(config_dir, exist_ok=True)
     
     config_name = f'{dataset}_{postfixs}.yaml'
@@ -37,7 +39,7 @@ def write_conf(args, project_name, masking_ratio, lr, wd):
     }
 
     loader_config = {
-        'batch_size': 32,
+        'batch_size': 64,
         'num_workers': 4,
         'pin_memory': True
     }
@@ -71,7 +73,7 @@ def write_conf(args, project_name, masking_ratio, lr, wd):
         pkl_file = [dataset,
                     masking_ratio,
                     seed,
-                    'preprocess.pkl']
+                    masking_type+'.pkl']
         pkl_file = '_'.join([str(x) for x in pkl_file])
         pkl_list.append(pkl_file)
 
@@ -79,7 +81,7 @@ def write_conf(args, project_name, masking_ratio, lr, wd):
             break
 
     dataset_config = {
-        'name': 'pascal',
+        'name': dataset,
         'pkl_root': '/share_home/slurmayp/dataset/attribute/',
         'pkl_list': pkl_list,
         'use_feature': False,
@@ -104,15 +106,15 @@ def write_conf(args, project_name, masking_ratio, lr, wd):
         yaml.dump(config, f)
 
     # write script
-    conf_dir = f'../scripts/{dataset}'
-    os.makedirs(conf_dir, exist_ok=True)
+    script_dir = f'../scripts/{dataset}/{project_name}'
+    os.makedirs(script_dir, exist_ok=True)
 
     # slurm script
     slurm_script_list = [
         '#!/bin/bash',
         f'#SBATCH --job-name=BoostCAM_{dataset}',
-        '#SBATCH --output=logs/%x-%j.out',
-        '#SBATCH --error=logs/%x-%j.err',
+        '#SBATCH --output=outs/%x-%j.out',
+        '#SBATCH --error=outs/%x-%j.err',
         '#SBATCH --nodes=1',
         '#SBATCH -p compute1',
         '#SBATCH --nodelist=unistml8',
@@ -121,7 +123,7 @@ def write_conf(args, project_name, masking_ratio, lr, wd):
 
     slurm_script = '\n'.join(slurm_script_list)
 
-    config_PATH = os.path.join('configs', dataset, config_name)
+    config_PATH = os.path.join('configs', dataset, project_name, config_name)
 
     start_script = [
         '. /usr/share/modules/init/sh',
@@ -135,7 +137,7 @@ def write_conf(args, project_name, masking_ratio, lr, wd):
 
     script = '\n'.join([slurm_script, start_script])
 
-    script_PATH = os.path.join(conf_dir, f'{dataset}_{postfixs}.sh')
+    script_PATH = os.path.join(script_dir, f'{dataset}_{postfixs}.sh')
     with open(script_PATH, 'w') as f:
         f.write(script)
 
@@ -143,15 +145,20 @@ def write_conf(args, project_name, masking_ratio, lr, wd):
 def main():
     args = parse_args()
 
-    project_name = 'BoostCAM18_FullActivate'
-    masking_ratios = [0.0, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9]
+    project_name = 'BoostCAM18_PositiveMasking'
+    masking_ratios = [0.0, 0.1, 0.3, 0.5, 0.7, 0.9]
+    masking_type = 'positive'
     
     for masking_ratio in masking_ratios:
-        lr = 1e-4
+        lr = 1e-5
         wd = 1e-4
-        write_conf(args, project_name, masking_ratio, lr, wd)
+        write_conf(args, project_name, 
+                   masking_ratio, masking_type, 
+                   lr, wd)
         wd = 0.0
-        write_conf(args, project_name, masking_ratio, lr, wd)
+        write_conf(args, project_name, 
+                   masking_ratio, masking_type, 
+                   lr, wd)
 
 
 if __name__ == '__main__':
