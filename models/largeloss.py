@@ -178,7 +178,7 @@ class BoostCAM(nn.Module):
     logits = F.adaptive_avg_pool2d(CAM, (1)).squeeze(-1).squeeze(-1)
     return logits
 
-  def loss(self, x, labels):
+  def loss(self, x, labels, masks=None):
     logits = self.forward(x)
     if logits.dim() == 1:
       logits = logits.unsqueeze(0)
