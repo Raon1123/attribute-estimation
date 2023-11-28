@@ -14,7 +14,7 @@ def parse_batch(batch, masking=True, device='cpu'):
         device (str): Device to be used.
 
     Returns:
-        tuple: Parsed batch.
+        data, target: Parsed data and target.
     """
     data, target, mask = batch
     
@@ -37,7 +37,7 @@ def train_epoch(model, train_dataloader, optimizer, config, device='cpu'):
         device (str): Device to be used for training.
 
     Returns:
-        float: Average loss of the epoch.
+        avg_loss: Average loss of the train epoch.
     """
     model.train()
     train_loss = 0.0
@@ -74,7 +74,7 @@ def test_epoch(model, test_dataloader, config, device='cpu'):
         device (str): Device to be used for testing.
 
     Returns:
-        loss: Average loss of the epoch.
+        avg_loss: Average loss of the test epoch.
     """
     model.eval()
     test_loss = 0.0
@@ -100,6 +100,8 @@ def test_epoch(model, test_dataloader, config, device='cpu'):
 def update_epoch(model, config):
     """
     Update function after each epoch.
+
+    For instance, LargeLossMatters and BoostCAM update decrease_clean_rate.
     """
 
     model_config = config['METHOD']
@@ -110,6 +112,9 @@ def update_epoch(model, config):
 
 
 def _evaluate_data(model, dataloader, config, device='cpu', masking=False):
+    """
+    internal function for evaluate_result
+    """
     model.eval()
 
     data_size = len(dataloader.dataset)
@@ -130,15 +135,12 @@ def _evaluate_data(model, dataloader, config, device='cpu', masking=False):
         data = data.to(device)
 
         with torch.no_grad():
-            logits = model.forward(data)
-            if method_name in ['LargeLossMatters', 'BoostCAM']:
-                if logits.dim() == 1:
-                    logits = logits.unsqueeze(0)
-                preds = torch.sigmoid(logits)
+            preds = model.prediction(data)
 
-            batch_sz = logits.size(0)
+            batch_sz = preds.size(0)
             pred[start_idx:start_idx+batch_sz] = preds.cpu().numpy()
             targets[start_idx:start_idx+batch_sz] = target.numpy()
+            
             if masking:
                 masked_targets[start_idx:start_idx+batch_sz] = masked_target.numpy()
 
@@ -200,33 +202,45 @@ def evaluate_cam(model, dataloader,
     - dataloader: dataloader for evaluation
 
     Output
-    - imgs: images of input (N, C, H, W)
-    - cams: CAMs of model (N, num_class, H, W)
+    - img_list: images of input (N, C, H, W)
+    - cam_list: CAMs of model (N, num_class, H, W)
     """
     model.eval()
     
-    imgs = []
-    cams = []
+    img_list = []
+    cam_list = []
+
+    target_list = []
+    pred_list = []
+    mask_list = []
 
     cnt_cams = 0
     for batch in dataloader:
-        datas, target = parse_batch(batch, device='cpu')
+        datas, targets, masks = batch
         datas = datas.to(device)
 
         with torch.no_grad():
             batch_cam = model.get_cam(datas)
+            preds = model.prediction(datas)
         batch_cam = batch_cam.cpu() # (N, C, 7, 7) note that normalized with [0,1]
 
-        imgs.append(datas.cpu())
-        cams.append(batch_cam)
+        img_list.append(datas.cpu())
+        cam_list.append(batch_cam)
+        target_list.append(targets.cpu())
+        pred_list.append(preds.detach().cpu())
+        mask_list.append(masks.cpu())
 
         cnt_cams += datas.shape[0]
         if cnt_cams >= num_imgs:
             break
 
-    imgs = torch.cat(imgs, dim=0)
-    cams = torch.cat(cams, dim=0)
-    cams = cams * 255.0
+    img_list = torch.cat(img_list, dim=0)
+    cam_list = torch.cat(cam_list, dim=0)
+    cam_list = cam_list * 255.0
+
+    target_list = torch.cat(target_list, dim=0)
+    pred_list = torch.cat(pred_list, dim=0)
+    mask_list = torch.cat(mask_list, dim=0)
 
     # return as pytorch tensor
-    return imgs, cams
+    return img_list, cam_list, target_list, pred_list, mask_list

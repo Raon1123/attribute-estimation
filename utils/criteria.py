@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.metrics import average_precision_score, accuracy_score, f1_score
 
 
-def mean_accuracy(preds, labels, eps=1e-10):
+def mean_accuracy(preds, labels, threshold=0.5, eps=1e-10):
   """
   Calculate label-based evaluation metric mA
 
@@ -17,7 +17,7 @@ def mean_accuracy(preds, labels, eps=1e-10):
   acc = np.zeros(num_classes)
 
   for i in range(num_classes):
-    preds_i = preds[:, i] > 0.5
+    preds_i = preds[:, i] > threshold
     labels_i = labels[:, i]
 
     # true positive
@@ -35,7 +35,7 @@ def mean_accuracy(preds, labels, eps=1e-10):
   return acc
 
 
-def example_based(preds, labels, eps=1e-10):
+def example_based(preds, labels, threshold=0.5, eps=1e-10):
   """
   Calculate instance-based evaluation metric mA
 
@@ -53,8 +53,8 @@ def example_based(preds, labels, eps=1e-10):
   f1 = np.zeros(num_instance)
 
   for i in range(num_instance):
-    preds_i = preds[i] > 0.5
-    labels_i = labels[i]
+    preds_i = preds[i,:] > threshold
+    labels_i = labels[i,:]
 
     # true positive
     tp = np.sum((preds_i == 1) & (labels_i == 1))

@@ -231,10 +231,18 @@ def get_masked_label(labels, unmasking_rate, masking_type='random'):
     if unmasking_rate == -1.0:
         num_masked_labels = num_classes - 1
     else:
-        num_masked_labels = int(num_classes * unmasking_rate)
+        masking_rate = 1.0 - unmasking_rate
+        num_masked_labels = int(num_classes * masking_rate)
 
     if masking_type != 'random':
         raise NotImplementedError
+    elif masking_type == 'positive':
+        # masking only positive labels with masking_rate
+        for mask, instance in zip(masked_labels, labels):
+            pos_idx = np.where(instance == 1.0)[0]
+            num_pos = len(pos_idx)
+            num_masked_pos = int(num_pos * masking_rate)
+            mask[pos_idx[:num_masked_pos]] = 1.0
     else:
         # iterate per instance
         for mask, instance in zip(masked_labels, labels):
@@ -260,7 +268,7 @@ def argparser():
     parser.add_argument('--seed', type=int, default=42)
     parser.add_argument('--force', action='store_true', default=False)
     parser.add_argument('--unmasking_rate', type=float, default=-1.0)
-    parser.add_argument('--masking_type', type=str, default='random', choices=['random', 'frequency']) # TODO add maksing type
+    parser.add_argument('--masking_type', type=str, default='random', choices=['random', 'positive']) # TODO add maksing type
     
     args = parser.parse_args()
     return args
@@ -271,32 +279,41 @@ def argparser():
 if __name__ == "__main__":
     args = argparser()
 
-    pkl_file = '_'.join([args.dataset, str(args.unmasking_rate), str(args.seed),'preprocess.pkl'])
-    save_path = os.path.join(args.save_dir, pkl_file)
-    # check if save path exists
-    if os.path.exists(save_path) and not args.force:
-        raise ValueError('Save path already exists: {}. If you generate even exist, please use --force option'.format(save_path))
-
+    if args.seed == 42:
+        seeds = [0, 1, 2, 3, 4]
+        if args.unmasking_rate == 0.0:
+            seeds = [0]
+    else: 
+        seeds = [args.seed]
     # set seed
-    np.random.seed(args.seed)
+    for seed in seeds:
+        print(seed)
+        args.seed = seed
+        np.random.seed(seed)
 
-    if args.dataset == 'rap1':
-        proc_dict = preprocess_rap1(args)
-    elif args.dataset == 'pascal':
-        proc_dict = preprocess_pascal(args)
-    elif args.dataset == 'coco':
-        proc_dict = preprocess_coco(args)
-    else:
-        raise NotImplementedError
-    
-    # saving proc_dict
-    with open(save_path, 'wb') as f:
-        pickle.dump(proc_dict, f)
-    
-    print('Preprocessing done!')
-    print('Saved at {}'.format(save_path))
-    print('Dataset: {}'.format(args.dataset))
-    print('Masking rate: {}'.format(args.unmasking_rate))
-    print('Number of train images: {}'.format(len(proc_dict['train_img_file'])))
-    print('Number of test images: {}'.format(len(proc_dict['test_img_file'])))
-    print('Number of attributes: {}'.format(len(proc_dict['label_str'])))
+        pkl_file = '_'.join([args.dataset, str(args.unmasking_rate), str(args.seed), args.masking_type+'.pkl'])
+        save_path = os.path.join(args.save_dir, pkl_file)
+        # check if save path exists
+        if os.path.exists(save_path) and not args.force:
+            raise ValueError('Save path already exists: {}. If you generate even exist, please use --force option'.format(save_path))
+
+        if args.dataset == 'rap1':
+            proc_dict = preprocess_rap1(args)
+        elif args.dataset == 'pascal':
+            proc_dict = preprocess_pascal(args)
+        elif args.dataset == 'coco':
+            proc_dict = preprocess_coco(args)
+        else:
+            raise NotImplementedError
+        
+        # saving proc_dict
+        with open(save_path, 'wb') as f:
+            pickle.dump(proc_dict, f)
+        
+        print('Preprocessing done!')
+        print('Saved at {}'.format(save_path))
+        print('Dataset: {}'.format(args.dataset))
+        print('Masking rate: {}'.format(args.unmasking_rate))
+        print('Number of train images: {}'.format(len(proc_dict['train_img_file'])))
+        print('Number of test images: {}'.format(len(proc_dict['test_img_file'])))
+        print('Number of attributes: {}'.format(len(proc_dict['label_str'])))

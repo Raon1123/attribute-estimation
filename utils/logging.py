@@ -71,23 +71,64 @@ def load_model(model, config):
   return model
 
 
+def get_exp_conf(config):
+  unmasking_ratio, split_seed = parse_pkl_file(config['DATASET']['pkl_file'])
+
+  data_conf = {
+    'dataset': config['DATASET']['name'],
+    'split_seed': split_seed,
+    'unmasking_ratio': unmasking_ratio,
+  }
+
+  model_conf = {
+    'model': config['METHOD']['name'],
+    'backbone': config['METHOD']['backbone'],
+    'mod_scheme': config['METHOD']['mod_scheme'],
+    'delta_rel': config['METHOD']['delta_rel'],
+  }
+
+  optimizer_conf = {
+    'optimizer': config['OPTIMIZER']['name'],
+    'lr': config['OPTIMIZER']['lr'],
+    'weight_decay': config['OPTIMIZER']['weight_decay'],
+    'epochs': config['OPTIMIZER']['epochs'],
+    'batch_size': config['DATALOADER']['batch_size'],
+    'scheduler': config['OPTIMIZER']['scheduler'],
+  }
+
+  conf = {
+    'dataset': data_conf,
+    'model': model_conf,
+    'optimizer': optimizer_conf,
+  }
+
+  return conf
+
+
+def parse_pkl_file(pkl_file):
+  pkl_split = pkl_file.split('_')
+  
+  unmasking_ratio = pkl_split[1]
+  split_seed = pkl_split[2]
+
+  return unmasking_ratio, split_seed
+
+
 def logger_init(config):
   logging_config = config['LOGGING']
   log_dir = get_logger_path(config)
 
-  pkl_file = config['DATASET']['pkl_file']
-  pkl_file = pkl_file.split('_')
-  split_seed = pkl_file[2]
-  split_seed = f'seed{split_seed}'
+  _, split_seed = parse_pkl_file(config['DATASET']['pkl_file'])
   postfix = [split_seed, logging_config['postfix']]
   postfix = '_'.join(postfix)
 
   if wandb is not None and logging_config['logger'] == 'wandb':
     project = project_name(config)
+    conf = get_exp_conf(config)
     wandb.init(
         project=project,
         name=postfix,
-        config=config
+        config=conf
     )
     wandb.watch_called = False
     logger = 'wandb'
@@ -147,8 +188,8 @@ def write_metrics(gt, preds, metrics, epoch, config):
   """
   log_path = get_logger_path(config, postfix=True)
 
-  gt_path = os.path.join(log_path, f'gt_{epoch}.pth')
-  preds_path = os.path.join(log_path, f'preds_{epoch}.pth')
+  gt_path = os.path.join(log_path, f'gt_{epoch}')
+  preds_path = os.path.join(log_path, f'preds_{epoch}')
 
   np.save(gt_path, gt)
   np.save(preds_path, preds)
@@ -156,6 +197,21 @@ def write_metrics(gt, preds, metrics, epoch, config):
   metrics_path = os.path.join(log_path, f'metrics_{epoch}.pkl')
   with open(metrics_path, 'wb') as f:
     pickle.dump(metrics, f)
+
+
+def unnormalize(img):
+    """
+    unnormalize image
+    """
+    if isinstance(img, torch.Tensor):
+        img = img.detach().cpu().numpy()
+
+    mn = np.array([0.485, 0.456, 0.406]).reshape(3, 1, 1)
+    st = np.array([0.229, 0.224, 0.225]).reshape(3, 1, 1)
+    img = img * st + mn
+    img = np.transpose(img, (1, 2, 0))
+    img = img * 255
+    return img
 
 
 def heatmap_on_image(img, heatmap, alpha=0.5):
@@ -169,11 +225,14 @@ def heatmap_on_image(img, heatmap, alpha=0.5):
   - ret: np.array
   """
   # img to np.array
-  img = img.numpy().transpose(1, 2, 0).astype(np.uint8)
-  heatmap = heatmap.numpy().astype(np.uint8)
+  img = unnormalize(img).astype(np.uint8)
+  img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
 
+  heatmap = heatmap.numpy().astype(np.uint8)
   heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+
   ret = cv2.addWeighted(heatmap, alpha, img, 1-alpha, 0)
+  ret = cv2.cvtColor(ret, cv2.COLOR_BGR2RGB)
 
   # img to pytorch tensor
   ret = TF.to_tensor(ret)
@@ -187,63 +246,136 @@ def print_metrics(metrics, prefix=''):
   print()
 
 
-def write_cams(config, imgs, cams, epoch, mode):
+def label_list_to_str(labels, label_to_str, threshold=0.5):
+    """
+    Boolean label list to string list.
+    """
+    ret = []
+    labels = (labels > threshold)
+    for i, label in enumerate(labels):
+        if label == 1:
+          ret.append(label_to_str[i])
+    ret = ', '.join(ret)
+    return ret 
+
+
+def write_cams(config, 
+               img_list, cam_list, target_list, pred_list, mask_list,
+               epoch, mode,
+               label_str):
   """ 
   Write the file of cams
   """
   log_dir = get_logger_path(config, postfix=True)
 
+  # write pth file
   img_file = f'{mode}img_{epoch}.pth'
   cam_file = f'{mode}cam_{epoch}.pth'
+  target_file = f'{mode}target_{epoch}.pth'
+  pred_file = f'{mode}pred_{epoch}.pth'
+  mask_file = f'{mode}mask_{epoch}.pth'
 
   img_path = os.path.join(log_dir, img_file)
   cam_path = os.path.join(log_dir, cam_file)
+  target_path = os.path.join(log_dir, target_file)
+  pred_path = os.path.join(log_dir, pred_file)
+  mask_path = os.path.join(log_dir, mask_file)
 
-  torch.save(imgs, img_path)
-  torch.save(cams, cam_path)
+  torch.save(img_list, img_path)
+  torch.save(cam_list, cam_path)
+  torch.save(target_list, target_path)
+  torch.save(pred_list, pred_path)
+  torch.save(mask_list, mask_path)
 
   # interpolate cams as same size of image
-  cams = torch.nn.functional.interpolate(cams, size=imgs.shape[2:], mode='bicubic')
+  cam_list = torch.nn.functional.interpolate(cam_list, size=img_list.shape[2:], mode='bicubic')
 
-  for idx, (img, cam) in enumerate(zip(imgs, cams)):
-    applied_imgs = []
-    num_class = cam.shape[0]
-    for attribute_cam in cam:
-      applied_imgs.append(heatmap_on_image(img, attribute_cam, 0.7))
+  # write grid image
+  num_classes = len(label_str)
+  num_rows = int(math.sqrt(num_classes)) + 1
+  num_cols = int(math.sqrt(num_classes)) + 1
+  
+  num_figs = img_list.shape[0]
 
-    # make grid
-    img_grid = make_grid(applied_imgs, nrow=int(math.sqrt(num_class)))
-    img_grid = img_grid.permute(1, 2, 0).numpy()
+  for fig_idx in range(num_figs):
+    fig = plt.figure(figsize=(20, 20))
 
-    # save grid image
-    grid_img_file = f'{mode}{idx}_{epoch}_grid.png'
+    img = img_list[fig_idx]
+    cam = cam_list[fig_idx]
+
+    target = target_list[fig_idx]
+    pred = pred_list[fig_idx]
+    mask = mask_list[fig_idx]
+
+    for class_idx, attribute_cam in enumerate(cam):
+      ax = fig.add_subplot(num_rows, num_cols, class_idx+1)
+      heatmapimg = heatmap_on_image(img, attribute_cam, 0.7)
+      heatmapimg = heatmapimg.numpy().transpose(1, 2, 0)
+      ax.imshow(heatmapimg)
+      ax.set_title(label_str[class_idx])
+      ax.axis('off')
+
+    grid_img_file = f'{mode}{fig_idx}_{epoch}_grid.png'
     grid_img_path = os.path.join(log_dir, grid_img_file)
-    plt.imshow(img_grid)
+
+    target_string = label_list_to_str(target, label_str)
+    pred_string = label_list_to_str(pred, label_str)
+    mask_string = label_list_to_str(mask, label_str)
+
+    title = f'{mode}{fig_idx}_{epoch}\n'
+    title += f'target: {target_string}\n'
+    title += f'pred: {pred_string}\n'
+    title += f'mask: {mask_string}\n'
+
+    plt.suptitle(title)
     plt.savefig(grid_img_path)
+    plt.close()
 
 
-def log_cams(logger, imgs, cams, epoch, mode, config=None):
+def log_cams(logger, 
+             img_list, cam_list, target_list, pred_list, mask_list,
+             epoch, mode, label_str, config=None):
   """
   Logging the cams
   """
   grid_cam_imgs = []
+  num_classes = len(label_str)
+  num_imgs = img_list.shape[0]
 
   # interpolate cams as same size of image
-  cams = torch.nn.functional.interpolate(cams, size=imgs.shape[2:], mode='bicubic')
+  cam_list = torch.nn.functional.interpolate(cam_list, size=img_list.shape[2:], mode='bicubic')
 
-  for idx, (img, cam) in enumerate(zip(imgs, cams)):
+  for fig_idx in range(num_imgs):
     applied_imgs = []
-    num_class = cam.shape[0]
+
+    img = img_list[fig_idx]
+    cam = cam_list[fig_idx]
+    
+    target = target_list[fig_idx]
+    pred = pred_list[fig_idx]
+    mask = mask_list[fig_idx]
+
     for attribute_cam in cam:
       applied_imgs.append(heatmap_on_image(img, attribute_cam, 0.7))
 
-      # make grid
-    img_grid = make_grid(applied_imgs, nrow=int(math.sqrt(num_class)))
+    # make grid
+    img_grid = make_grid(applied_imgs, nrow=int(math.sqrt(num_classes)))
     grid_cam_imgs.append(img_grid)
 
-    img_name = f'{mode}{idx}_image'
+    img_name = f'{mode}{fig_idx}_image'
+    target_string = label_list_to_str(target, label_str)
+    pred_string = label_list_to_str(pred, label_str)
+    mask_string = label_list_to_str(mask, label_str)
+
+    caption = f'{img_name}\n'
+    caption += f'target: {target_string}\n'
+    caption += f'pred: {pred_string}\n'
+    caption += f'mask: {mask_string}\n'
+
+    # log grid image
     if logger == 'wandb':
-      wandb.log({img_name: [wandb.Image(img_grid)]}, step=epoch)
+      img = wandb.Image(img_grid, caption=caption)
+      wandb.log({img_name: [img]}, step=epoch)
     else:
       try:
         logger.add_image(img_name, img_grid, epoch)

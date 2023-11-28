@@ -49,6 +49,11 @@ def get_dataset(config):
 
     Input
     - config: config variable for setting, see load_config() in main.py
+
+    Output
+    - train_dataset: training dataset
+    - test_dataset: testing dataset
+    - meta_info: meta information of dataset (e.g. label_str, num_classes)
     """
     try:
         use_feature = config['DATASET']['use_feature']
@@ -123,7 +128,7 @@ def get_dataloader(config):
     """
     train_dataset, test_dataset, meta_info = get_dataset(config)
 
-    loader_config = config['loader']
+    loader_config = config['DATALOADER']
 
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset,
