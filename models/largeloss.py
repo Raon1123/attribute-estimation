@@ -74,13 +74,18 @@ class LargeLossMatters(nn.Module):
       
       return features
     
-    def loss(self, x, labels):
+    def loss(self, x, labels, mask=None):
       """
       Args:
         x: (N, num_classes)
         labels: (N, num_classes) 
       """
       preds = self.forward(x)
+
+      if mask is not None:
+        unmasked = (mask == 0)
+        preds = preds[unmasked]
+        labels = labels[unmasked]
 
       batch_size = int(labels.shape[0])
       num_classes = int(labels.shape[1])
@@ -178,16 +183,23 @@ class BoostCAM(nn.Module):
     logits = F.adaptive_avg_pool2d(CAM, (1)).squeeze(-1).squeeze(-1)
     return logits
 
-  def loss(self, x, labels, masks=None):
+  def loss(self, x, labels, mask=None):
+    loss_fn = nn.BCEWithLogitsLoss(reduction='none')
     logits = self.forward(x)
     if logits.dim() == 1:
       logits = logits.unsqueeze(0)
     preds = torch.sigmoid(logits)
 
     batch_size = int(labels.shape[0])
+
+    # loss calculation only unmasked labels
+    if mask is not None:
+      unmasked = (mask == 0)
+      preds = preds[unmasked]
+      labels = labels[unmasked]
+    
     num_classes = int(labels.shape[1])
 
-    loss_fn = nn.BCEWithLogitsLoss(reduction='none')
     loss_matrix = loss_fn(preds, labels) # (N, num_classes)
     corrected_loss_matrix = loss_fn(preds, torch.logical_not(labels).float()) # (N, num_classes)
     correction_idx = [torch.tensor([]), torch.tensor([])]
