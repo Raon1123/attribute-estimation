@@ -1,3 +1,25 @@
+# config and scripts
+sample.ipynb
+scripts/*
+*.sh
+
+config.yml
+configs/*
+
+# logs
+wandb/*
+logs/*
+save/*
+*.pkl
+*.pth
+*.tar
+*.txt
+*.err
+*.out
+
+
+preprocessing/visual_preprocess.py
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -127,3 +149,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+live.ipynb
+
